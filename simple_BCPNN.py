@@ -41,8 +41,8 @@ class BCPNN:
         #Input current
         self.I = np.zeros(self.n_units)
      
-    def update(self, dt = 1.0, I = None, noise = 0.0):
-        '''Updates variables for each epoch of training.'''
+    def update_state(self, dt = 1.0, I = None, noise = 0.0):
+        '''Updates state variables.'''
         if I is None:
             I = self.I
 
@@ -68,6 +68,11 @@ class BCPNN:
         self.p_post += (dt / self.tau_p) * (self.z_post - self.p_post)
         self.p_co += (dt / self.tau_p) * (np.outer(self.z_pre, self.z_post))
 
+    def update_weights(self, dt = 1.0, I = None, noise = 0.0):
+        '''Updates weights during training.'''
+        if I is None:
+            I = self.I
+
         # Weights  
         eps = 1e-9 # Prevent log(0) as output
         self.w = np.log((self.p_co + eps) / (np.outer(self.p_pre, self.p_post)))
@@ -90,13 +95,15 @@ class BCPNN:
 
         return seq1, seq2
 
-    def train(self, sequence, T_per, epochs, dt = 1.0):
+    def train(self, sequence, pattern_dur, epochs, dt = 1.0):
         '''Trains the network.'''
         for epoch in range(epochs):
             for pattern_idx in sequence:
                 I_pattern = np.eye(self.n_units)[pattern_idx] 
-                for _ in range(T_per):
-                    self.update(dt, I=I_pattern)
+                print(I_pattern)
+                for _ in range(pattern_dur):
+                    self.update_state(dt, I=I_pattern)
+                    self.update_weights(dt, I=I_pattern)
 
     def recall(self, cue, steps=10, dt=1.0, noise=0.0):
         '''Sequence recall given a cue.'''
@@ -107,9 +114,10 @@ class BCPNN:
         for t in range(steps):
             # Recurrent input from learned weights
             I_recurrent = np.dot(self.w.T, self.o)
+            print('I_recurrent', I_recurrent)
             
             # Update network state using the recurrent input
-            self.update(dt=dt, I=I_recurrent, noise=noise)
+            self.update_state(dt=dt, I=I_recurrent, noise=noise)
             
             # Store output pattern
             recall_history.append(self.o.copy())
@@ -122,7 +130,7 @@ if __name__ == '__main__':
     minicolumns = 2
     nn = BCPNN(hypercolumns, minicolumns)
     seq1, seq2 = nn.sequence(overlap = 0)
-    nn.train(seq1, T_per = 1, epochs = 10, dt = 0.01)
+    nn.train(seq1, pattern_dur = 1, epochs = 10, dt = 0.01)
     cue = np.eye(nn.n_units)[seq1[0]]
     recall = nn.recall(cue, steps=10, dt=0.01)
     print('Pattern: ', seq1)
