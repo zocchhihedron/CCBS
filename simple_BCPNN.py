@@ -1,0 +1,113 @@
+import numpy as np
+import matplotlib as plt
+
+class BCPNN:
+    def __init__(self, hypercolumns, minicolumns, g_beta = 1.0, beta = 1.0, tau_m = 0.02, 
+                 g_I = 1.0, g_a = 97.0, tau_p = 10.0, tau_z_pre = 0.15, tau_z_post = 0.005, tau_a=2.70):
+        '''A simplified model of the BCPNN network with defined network variables and functions for creating
+        sequences, training the network, updating variables and running the network for given sequences.
+        A helper softmax function for the updating function is included. Default values for instance variables 
+        taken from Table 1 in the paper.'''
+
+        # Matrix representation
+        self.hypercolumns = hypercolumns
+        self.minicolumns = minicolumns
+        self.n_units = self.hypercolumns * self.minicolumns
+
+        # Parameters
+        self.g_beta = g_beta 
+        self.g_I = g_I
+        self.g_a = g_a
+        self.tau_m  = tau_m
+        self.tau_p = tau_p
+        self.tau_z_pre = tau_z_pre
+        self.tau_z_post = tau_z_post
+        self.tau_a = tau_a
+
+        # State variables
+        self.s = np.zeros(self.n_units)   
+        self.o = np.ones(self.n_units) * (1.0 / self.minicolumns) # MODIFY?
+        self.a = np.zeros_like(self.o) 
+        self.z_pre = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_post = np.zeros(self.n_units) * 1.0 / self.minicolumns
+
+        # Weights and probabilities
+        self.w = np.zeros((self.n_units, self.n_units))
+        self.p_pre = np.ones(self.n_units) * (1.0 / self.minicolumns)
+        self.p_post = np.ones(self.n_units) * (1.0 / self.minicolumns)
+        self.p_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
+        self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
+
+        #Input current
+        self.I = np.zeros(self.n_units)
+     
+    def update(self, dt = 1.0, I = None, noise = 0.0):
+        '''Updates variables for each epoch of training.'''
+        if I is None:
+            I = self.I
+
+        # Current 
+        self.s += (dt / self.tau_m) * ( + self.g_beta * self.beta  # Bias
+                                        + self.g_I * I  # Input current
+                                        - self.g_a * self.a  # Adaptation
+                                        + noise  # This last term is the noise
+                                        - self.s)  # s follow all of the s above  
+        
+        # WTA mechanism
+        self.o = self.softmax(self.s)
+
+        # Update the adaptation
+        self.a += (dt / self.tau_a) * (self.o - self.a)
+
+        # Z-traces   
+        self.z_pre += (dt / self.tau_z_pre) * (self.o - self.z_pre)
+        self.z_post += (dt / self.tau_z_post) * (self.o - self.z_post)
+
+        # Probabilities
+        self.p_pre += (dt / self.tau_p) * (self.z_pre - self.p_pre)
+        self.p_post += (dt / self.tau_p) * (self.z_post - self.p_post)
+        self.p_co += (dt / self.tau_p) * (np.outer(self.z_pre, self.z_post))
+
+        # Weights  
+        eps = 1e-9 # Prevent log(0) as output
+        self.w = np.log((self.p_co + eps) / (np.outer(self.p_pre, self.p_post)))
+
+    def softmax(self, x):
+        """Compute softmax values for each sets of scores in x."""
+        e_x = np.exp(x - np.max(x))
+        return e_x / e_x.sum()
+
+    def sequence(self, overlap = 0):
+        '''Creates a sequence containing patterns.'''
+        print('n_patterns = ', self.n_units)
+        n_shared = int(overlap * self.n_units)
+        n_unique = self.n_units - n_shared
+
+        # Create sequence 1 (base patterns)
+        seq1 = np.arange(self.n_units)
+
+        # Create sequence 2
+        shared_part = seq1[:n_shared]  # same as seq1 for the shared region
+        unique_part = np.arange(self.n_units, self.n_units + n_unique)  # new unique indices
+        seq2 = np.concatenate([shared_part, unique_part])
+
+        return seq1, seq2
+
+    def train(self, sequence, T_per, epochs, dt = 1.0):
+        '''Trains the network.'''
+        for i in range(epochs):
+            for pattern in sequence:
+                for pattern in range(T_per):
+                    self.update(dt)
+                    print(self.w)
+
+    def recall(self):
+        return
+
+if __name__ == '__main__':
+    hypercolumns = 3
+    minicolumns = 4
+    nn = BCPNN(hypercolumns, minicolumns)
+    seq1, seq2 = nn.sequence(overlap = 0)
+    print(seq1, seq2)
+    nn.train(seq1, T_per = 1, epochs = 10, dt = 0.01)
