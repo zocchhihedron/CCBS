@@ -122,9 +122,8 @@ if __name__ == '__main__':
     minicolumns = 2
     nn = BCPNN(hypercolumns, minicolumns)
     seq1, seq2 = nn.sequence(overlap = 0)
-    print(seq1, seq2)
     nn.train(seq1, T_per = 1, epochs = 10, dt = 0.01)
     cue = np.eye(nn.n_units)[seq1[0]]
     recall = nn.recall(cue, steps=10, dt=0.01)
-    print(cue)
-    print(recall)
+    print('Pattern: ', seq1)
+    print('Recall: ', recall)
