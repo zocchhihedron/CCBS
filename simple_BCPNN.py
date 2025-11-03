@@ -78,36 +78,53 @@ class BCPNN:
         return e_x / e_x.sum()
 
     def sequence(self, overlap = 0):
-        '''Creates a sequence containing patterns.'''
-        print('n_patterns = ', self.n_units)
+        '''Creates 2 sequences containing patterns with the chosen degree of overlap.'''
         n_shared = int(overlap * self.n_units)
         n_unique = self.n_units - n_shared
 
-        # Create sequence 1 (base patterns)
         seq1 = np.arange(self.n_units)
 
-        # Create sequence 2
-        shared_part = seq1[:n_shared]  # same as seq1 for the shared region
-        unique_part = np.arange(self.n_units, self.n_units + n_unique)  # new unique indices
+        shared_part = seq1[:n_shared] 
+        unique_part = np.arange(self.n_units, self.n_units + n_unique) 
         seq2 = np.concatenate([shared_part, unique_part])
 
         return seq1, seq2
 
     def train(self, sequence, T_per, epochs, dt = 1.0):
         '''Trains the network.'''
-        for i in range(epochs):
-            for pattern in sequence:
-                for pattern in range(T_per):
-                    self.update(dt)
-                    print(self.w)
+        for epoch in range(epochs):
+            for pattern_idx in sequence:
+                I_pattern = np.eye(self.n_units)[pattern_idx] 
+                for _ in range(T_per):
+                    self.update(dt, I=I_pattern)
 
-    def recall(self):
-        return
+    def recall(self, cue, steps=10, dt=1.0, noise=0.0):
+        '''Sequence recall given a cue.'''
+        # Initialize recall state
+        self.o = cue.copy()
+        recall_history = [self.o.copy()]
+
+        for t in range(steps):
+            # Recurrent input from learned weights
+            I_recurrent = np.dot(self.w.T, self.o)
+            
+            # Update network state using the recurrent input
+            self.update(dt=dt, I=I_recurrent, noise=noise)
+            
+            # Store output pattern
+            recall_history.append(self.o.copy())
+
+        return np.array(recall_history)
 
 if __name__ == '__main__':
-    hypercolumns = 3
-    minicolumns = 4
+    # Usage example
+    hypercolumns = 1
+    minicolumns = 2
     nn = BCPNN(hypercolumns, minicolumns)
     seq1, seq2 = nn.sequence(overlap = 0)
     print(seq1, seq2)
     nn.train(seq1, T_per = 1, epochs = 10, dt = 0.01)
+    cue = np.eye(nn.n_units)[seq1[0]]
+    recall = nn.recall(cue, steps=10, dt=0.01)
+    print(cue)
+    print(recall)
