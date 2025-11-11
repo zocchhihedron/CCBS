@@ -37,18 +37,17 @@ class BCPNN:
         self.p_post = np.ones(self.n_units) * (1.0 / self.minicolumns)
         self.p_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
         self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
-
-        #Input current
-        self.I = np.zeros(self.n_units)
      
     def update_state(self, dt = 1.0, I = None, noise = 0.0):
         '''Updates state variables.'''
+        # External input current
         if I is None:
-            I = self.I
+            I = np.ndarray((minicolumns, int(dt)))
+            print('I state upd' , I)
 
         # Current 
         self.s += (dt / self.tau_m) * ( + self.g_beta * self.beta  # Bias
-                                        + self.g_I * I  # Input current
+                                        + self.g_I * np.dot(self.w.T, self.o)  # Internal input current
                                         - self.g_a * self.a  # Adaptation
                                         + noise  # This last term is the noise
                                         - self.s)  # s follow all of the s above  
@@ -69,9 +68,11 @@ class BCPNN:
         self.p_co += (dt / self.tau_p) * (np.outer(self.z_pre, self.z_post))
 
     def update_weights(self, dt = 1.0, I = None, noise = 0.0):
-        '''Updates weights during training.'''
+        '''Updates weights for training.'''
+        # External input current
         if I is None:
-            I = self.I
+            I = np.ndarray((minicolumns, int(dt)))
+            print('I weight upd' , I)
 
         # Weights  
         eps = 1e-9 # Prevent log(0) as output
@@ -99,11 +100,10 @@ class BCPNN:
         '''Trains the network.'''
         for epoch in range(epochs):
             for pattern_idx in sequence:
-                I_pattern = np.eye(self.n_units)[pattern_idx] 
-                print(I_pattern)
+                I = np.ndarray((minicolumns, int(dt)))
                 for _ in range(pattern_dur):
-                    self.update_state(dt, I=I_pattern)
-                    self.update_weights(dt, I=I_pattern)
+                    self.update_state(dt, I)
+                    self.update_weights(dt, I)
 
     def recall(self, cue, steps=10, dt=1.0, noise=0.0):
         '''Sequence recall given a cue.'''
@@ -131,7 +131,10 @@ if __name__ == '__main__':
     nn = BCPNN(hypercolumns, minicolumns)
     seq1, seq2 = nn.sequence(overlap = 0)
     nn.train(seq1, pattern_dur = 1, epochs = 10, dt = 0.01)
+    nn.update_state()
+    nn.update_weights()
     cue = np.eye(nn.n_units)[seq1[0]]
     recall = nn.recall(cue, steps=10, dt=0.01)
     print('Pattern: ', seq1)
     print('Recall: ', recall)
+kk
