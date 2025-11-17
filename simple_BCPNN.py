@@ -137,4 +137,3 @@ if __name__ == '__main__':
     recall = nn.recall(cue, steps=10, dt=0.01)
     print('Pattern: ', seq1)
     print('Recall: ', recall)
-kk
