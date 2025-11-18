@@ -80,24 +80,33 @@ class BCPNN:
         # Weights  
         eps = 1e-9 # Prevent log(0) as output
         self.w = np.log((self.p_co + eps) / (np.outer(self.p_pre, self.p_post)))
-    
-    def produce_sequences(n_patterns, s, r):
-        '''Creates 2 sequences containing patterns with the chosen degree of element-wise and temporal overlap.'''
+
+    def produce_sequences(self, n_patterns = None, s=0, r=0):
+        '''Creates 2 sequences containing patterns with the chosen degree of element-wise and temporal overlap
+        (s = sequential overlap, r = representational overlap)'''
+        if n_patterns == None:
+            n_patterns = int(minicolumns)
+
         n_r = int(r * n_patterns / 2)
         n_s = int(s * hypercolumns)
         n_size = int(n_patterns / 2)
 
-        matrix = create_orthogonal_canonical_representation(minicolumns, hypercolumns)[:n_patterns]
-        sequence1 = matrix[:n_size]
-        sequence2 = matrix[n_size:]
+        # Create orthogonal canonical representation
+        aux = []
+        for i in range(minicolumns):
+            aux.append(i * np.ones(hypercolumns))
+        matrix = np.array(aux, dtype = 'int')[:n_patterns]
+
+        seq1 = matrix[:n_size]
+        seq2 = matrix[n_size:]
 
         start_index = max(int(0.5 * (n_size - n_r)), 0)
         end_index = min(start_index + n_r, n_size)
 
         for index in range(start_index, end_index):
-            sequence2[index, :n_s] = sequence1[index, :n_s]
+            seq2[index, :n_s] = seq1[index, :n_s]
 
-        return sequence1, sequence2
+        return seq1, seq2
 
     def train(self, sequence, pattern_dur, epochs, dt = 1.0):
         '''Trains the network.'''
@@ -106,6 +115,7 @@ class BCPNN:
                 if dt < 1.0:
                     I = np.ndarray((minicolumns, 1))
                 else:
+
                     I = np.ndarray((minicolumns, int(dt)))
                 for pattern in range(pattern_dur):
                     self.update_state(dt, I)
@@ -131,14 +141,9 @@ class BCPNN:
 
 if __name__ == '__main__':
     # Usage example
-    hypercolumns = 1
+    hypercolumns = 3
     minicolumns = 4
     nn = BCPNN(hypercolumns, minicolumns)
-    seq1, seq2 = nn.produce_sequences(n_patterns = 3, s = 0, r = 0)
-    nn.train(seq1, pattern_dur = 1, epochs = 10, dt = 0.01)
-    nn.update_state()
-    nn.update_weights()
-    cue = np.eye(nn.n_units)[seq1[0]]
-    recall = nn.recall(cue, steps=10, dt=0.01)
-    print('Pattern: ', seq1)
-    print('Recall: ', recall)
+    seq1, seq2 = nn.produce_sequences(r = 1)
+    print('seq1: ', seq1)
+    print('seq2: ', seq2)   
