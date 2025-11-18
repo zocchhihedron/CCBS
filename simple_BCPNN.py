@@ -1,4 +1,5 @@
 import numpy as np
+import math
 import matplotlib as plt
 
 class BCPNN:
@@ -42,8 +43,8 @@ class BCPNN:
         '''Updates state variables.'''
         # External input current
         if I is None:
-            I = np.ndarray((minicolumns, int(dt)))
-            print('I state upd' , I)
+            I = np.ndarray((minicolumns, math.ceil(dt))) #Round dt up to the closest integer (avoid 0)
+
 
         # Current 
         self.s += (dt / self.tau_m) * ( + self.g_beta * self.beta  # Bias
@@ -51,9 +52,12 @@ class BCPNN:
                                         - self.g_a * self.a  # Adaptation
                                         + noise  # This last term is the noise
                                         - self.s)  # s follow all of the s above  
-        
+        print('s type: ', np.shape(self.s))
+
         # WTA mechanism
-        self.o = self.softmax(self.s)
+        self.o = np.argmax(self.s)
+        print('s is ', self.s)
+        print('o is ', self.o)
 
         # Update the adaptation
         self.a += (dt / self.tau_a) * (self.o - self.a)
@@ -67,41 +71,43 @@ class BCPNN:
         self.p_post += (dt / self.tau_p) * (self.z_post - self.p_post)
         self.p_co += (dt / self.tau_p) * (np.outer(self.z_pre, self.z_post))
 
-    def update_weights(self, dt = 1.0, I = None, noise = 0.0):
+    def update_weights(self, dt = 5.0, I = None, noise = 0.0):
         '''Updates weights for training.'''
         # External input current
         if I is None:
-            I = np.ndarray((minicolumns, int(dt)))
-            print('I weight upd' , I)
+            I = np.ndarray((minicolumns, math.ceil(dt))) #Round dt up to the closest integer (avoid 0)
 
         # Weights  
         eps = 1e-9 # Prevent log(0) as output
         self.w = np.log((self.p_co + eps) / (np.outer(self.p_pre, self.p_post)))
+    
+    def produce_sequences(n_patterns, s, r):
+        '''Creates 2 sequences containing patterns with the chosen degree of element-wise and temporal overlap.'''
+        n_r = int(r * n_patterns / 2)
+        n_s = int(s * hypercolumns)
+        n_size = int(n_patterns / 2)
 
-    def softmax(self, x):
-        """Compute softmax values for each sets of scores in x."""
-        e_x = np.exp(x - np.max(x))
-        return e_x / e_x.sum()
+        matrix = create_orthogonal_canonical_representation(minicolumns, hypercolumns)[:n_patterns]
+        sequence1 = matrix[:n_size]
+        sequence2 = matrix[n_size:]
 
-    def sequence(self, overlap = 0):
-        '''Creates 2 sequences containing patterns with the chosen degree of overlap.'''
-        n_shared = int(overlap * self.n_units)
-        n_unique = self.n_units - n_shared
+        start_index = max(int(0.5 * (n_size - n_r)), 0)
+        end_index = min(start_index + n_r, n_size)
 
-        seq1 = np.arange(self.n_units)
+        for index in range(start_index, end_index):
+            sequence2[index, :n_s] = sequence1[index, :n_s]
 
-        shared_part = seq1[:n_shared] 
-        unique_part = np.arange(self.n_units, self.n_units + n_unique) 
-        seq2 = np.concatenate([shared_part, unique_part])
-
-        return seq1, seq2
+        return sequence1, sequence2
 
     def train(self, sequence, pattern_dur, epochs, dt = 1.0):
         '''Trains the network.'''
         for epoch in range(epochs):
-            for pattern_idx in sequence:
-                I = np.ndarray((minicolumns, int(dt)))
-                for _ in range(pattern_dur):
+            for pattern in sequence:
+                if dt < 1.0:
+                    I = np.ndarray((minicolumns, 1))
+                else:
+                    I = np.ndarray((minicolumns, int(dt)))
+                for pattern in range(pattern_dur):
                     self.update_state(dt, I)
                     self.update_weights(dt, I)
 
@@ -111,13 +117,12 @@ class BCPNN:
         self.o = cue.copy()
         recall_history = [self.o.copy()]
 
-        for t in range(steps):
-            # Recurrent input from learned weights
-            I_recurrent = np.dot(self.w.T, self.o)
-            print('I_recurrent', I_recurrent)
-            
-            # Update network state using the recurrent input
-            self.update_state(dt=dt, I=I_recurrent, noise=noise)
+        for i in range(steps):
+            # Inner input from learned weights
+            I_inner = np.dot(self.w.T, self.o)
+
+            # Update network state using the inner input
+            self.update_state(dt=dt, I=I_inner, noise=noise)
             
             # Store output pattern
             recall_history.append(self.o.copy())
@@ -127,9 +132,9 @@ class BCPNN:
 if __name__ == '__main__':
     # Usage example
     hypercolumns = 1
-    minicolumns = 2
+    minicolumns = 4
     nn = BCPNN(hypercolumns, minicolumns)
-    seq1, seq2 = nn.sequence(overlap = 0)
+    seq1, seq2 = nn.produce_sequences(n_patterns = 3, s = 0, r = 0)
     nn.train(seq1, pattern_dur = 1, epochs = 10, dt = 0.01)
     nn.update_state()
     nn.update_weights()
