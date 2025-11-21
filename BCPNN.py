@@ -109,14 +109,12 @@ class BCPNN:
         return seq1, seq2
 
     def train(self, sequence, pattern_dur, epochs, dt = 1.0):
-        '''Trains the network.'''
+        '''Trains the network, IPI = 0 here?'''
         for epoch in range(epochs):
             for pattern in sequence:
-                if dt < 1.0:
-                    I = np.ndarray((minicolumns, 1))
-                else:
-
-                    I = np.ndarray((minicolumns, int(dt)))
+                # External input current
+                if I is None:
+                    I = np.array((minicolumns, math.ceil(dt))) #Round dt up to the closest integer (avoid 0)
                 for pattern in range(pattern_dur):
                     self.update_state(dt, I)
                     self.update_weights(dt, I)
@@ -130,7 +128,7 @@ class BCPNN:
         for i in range(steps):
             # Inner input from learned weights
             I_inner = np.dot(self.w.T, self.o)
-
+            
             # Update network state using the inner input
             self.update_state(dt=dt, I=I_inner, noise=noise)
             
@@ -146,4 +144,7 @@ if __name__ == '__main__':
     nn = BCPNN(hypercolumns, minicolumns)
     seq1, seq2 = nn.produce_sequences(r = 1)
     print('seq1: ', seq1)
-    print('seq2: ', seq2)   
+    print('seq2: ', seq2)  
+    print('shape: ', np.ndarray((3, 1))) 
+
+# Plots of s, o + I, w at the end
