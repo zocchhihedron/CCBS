@@ -119,32 +119,11 @@ class BCPNN:
                     self.update_state(dt, I)
                     self.update_weights(dt, I)
 
-    def recall(self, cue, steps=10, dt=1.0, noise=0.0):
+    def recall(self):
         '''Sequence recall given a cue.'''
-        # Initialize recall state
-        self.o = cue.copy()
-        recall_history = [self.o.copy()]
-
-        for i in range(steps):
-            # Inner input from learned weights
-            I_inner = np.dot(self.w.T, self.o)
-            
-            # Update network state using the inner input
-            self.update_state(dt=dt, I=I_inner, noise=noise)
-            
-            # Store output pattern
-            recall_history.append(self.o.copy())
-
-        return np.array(recall_history)
+        pass
 
 if __name__ == '__main__':
-    # Usage example
-    hypercolumns = 3
-    minicolumns = 4
-    nn = BCPNN(hypercolumns, minicolumns)
-    seq1, seq2 = nn.produce_sequences(r = 1)
-    print('seq1: ', seq1)
-    print('seq2: ', seq2)  
-    print('shape: ', np.ndarray((3, 1))) 
+    pass
 
 # Plots of s, o + I, w at the end

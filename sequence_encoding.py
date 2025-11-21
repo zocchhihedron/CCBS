@@ -25,20 +25,25 @@ def sequence(n_patterns, minicolumns, patterns):
     ith row representing the ith pattern/time state and its jth column representing
     the jth hypercolumn in the pattern.'''
     seq = np.empty((n_patterns, minicolumns))
-    for i in seq:
-        for j in seq:
-            seq[i][j] = patterns[i][j]
+    for i in range(n_patterns):
+        seq[i] = patterns[i]
     return seq
 
-hypercolumn_states_0 = [hypercolumn_state(3,1)[1], hypercolumn_state(3,0)[1], hypercolumn_state(3,0)[1]]
-hypercolumn_states_1 = [hypercolumn_state(3,0)[1], hypercolumn_state(3,1)[1], hypercolumn_state(3,0)[1]]
-hypercolumn_states_2 = [hypercolumn_state(3,0)[1], hypercolumn_state(3,0)[1], hypercolumn_state(3,2)[1]]
-print(hypercolumn_states_0)
+hypercolumn_states_0 = [hypercolumn_state(3,0)[1], hypercolumn_state(3,1)[1], hypercolumn_state(3,2)[1]]
+hypercolumn_states_1 = [hypercolumn_state(3,2)[1], hypercolumn_state(3,0)[1], hypercolumn_state(3,1)[1]]
+hypercolumn_states_2 = [hypercolumn_state(3,1)[1], hypercolumn_state(3,2)[1], hypercolumn_state(3,0)[1]]
+print[hypercolumn_states_0]
+print[hypercolumn_states_1]
+print[hypercolumn_states_2]
 pattern_0 = pattern(3, hypercolumn_states_0)
 pattern_1 = pattern(3, hypercolumn_states_1)
 pattern_2 = pattern(3, hypercolumn_states_2)
 print(pattern_0)
+print(pattern_1)
+print(pattern_2)
+'''
 patterns = [pattern_0, pattern_1, pattern_2]
 print(patterns)
 seq = sequence(3, 3, patterns)
 print(seq)
+'''
