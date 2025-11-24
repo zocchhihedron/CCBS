@@ -26,8 +26,8 @@ class BCPNN:
         self.tau_a = tau_a
 
         # State variables
-        self.s = np.zeros(self.n_units)   
-        self.o = np.ones(self.n_units) * (1.0 / self.minicolumns) # MODIFY?
+        self.s = np.zeros((self.n_units, self.n_units))   
+        self.o = np.ones(self.n_units)
         self.a = np.zeros_like(self.o) 
         self.z_pre = np.zeros(self.n_units) * 1.0 / self.minicolumns
         self.z_post = np.zeros(self.n_units) * 1.0 / self.minicolumns
@@ -38,13 +38,13 @@ class BCPNN:
         self.p_post = np.ones(self.n_units) * (1.0 / self.minicolumns)
         self.p_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
         self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
-     
-    def update_state(self, dt = 1.0, I = None, noise = 0.0):
-        '''Updates state variables.'''
-        # External input current
-        if I is None:
-            I = np.ndarray((minicolumns, math.ceil(dt))) #Round dt up to the closest integer (avoid 0)
 
+        # Variable histories for plotting 
+        self.s_history = []
+        self.o_history = []
+     
+    def update_state(self, dt = 1.0, noise = 0.0):
+        '''Updates state variables.'''
 
         # Current 
         self.s += (dt / self.tau_m) * ( + self.g_beta * self.beta  # Bias
@@ -52,12 +52,11 @@ class BCPNN:
                                         - self.g_a * self.a  # Adaptation
                                         + noise  # This last term is the noise
                                         - self.s)  # s follow all of the s above  
-        print('s type: ', np.shape(self.s))
+        self.s_history.append(self.s)
 
         # WTA mechanism
-        self.o = np.argmax(self.s)
-        print('s is ', self.s)
-        print('o is ', self.o)
+        #self.o = np.argmax(self.s)
+        self.o_history.append(self.o)
 
         # Update the adaptation
         self.a += (dt / self.tau_a) * (self.o - self.a)
@@ -72,58 +71,37 @@ class BCPNN:
         self.p_co += (dt / self.tau_p) * (np.outer(self.z_pre, self.z_post))
 
     def update_weights(self, dt = 5.0, I = None, noise = 0.0):
-        '''Updates weights for training.'''
-        # External input current
-        if I is None:
-            I = np.ndarray((minicolumns, math.ceil(dt))) #Round dt up to the closest integer (avoid 0)
+        '''Updates weights and bias for training.'''
+        # Bias
 
         # Weights  
         eps = 1e-9 # Prevent log(0) as output
         self.w = np.log((self.p_co + eps) / (np.outer(self.p_pre, self.p_post)))
 
     def produce_sequences(self, n_patterns = None, s=0, r=0):
-        '''Creates 2 sequences containing patterns with the chosen degree of element-wise and temporal overlap
-        (s = sequential overlap, r = representational overlap)'''
-        if n_patterns == None:
-            n_patterns = int(minicolumns)
+        pass
 
-        n_r = int(r * n_patterns / 2)
-        n_s = int(s * hypercolumns)
-        n_size = int(n_patterns / 2)
+    def train(self, seq, pattern_dur, epochs, dt = 1.0):
+        '''Trains the network with a sequence as external input.'''
+        for epoch in range(epochs): 
+            for pattern in seq: # Choose a pattern / time state 
+                    print('s before updating: ', self.s)
+                    self.update_state()
+                    print('The pattern is ', pattern)
+                    print('s after updating: ', self.s)
+                    self.update_weights()
 
-        # Create orthogonal canonical representation
-        aux = []
-        for i in range(minicolumns):
-            aux.append(i * np.ones(hypercolumns))
-        matrix = np.array(aux, dtype = 'int')[:n_patterns]
 
-        seq1 = matrix[:n_size]
-        seq2 = matrix[n_size:]
-
-        start_index = max(int(0.5 * (n_size - n_r)), 0)
-        end_index = min(start_index + n_r, n_size)
-
-        for index in range(start_index, end_index):
-            seq2[index, :n_s] = seq1[index, :n_s]
-
-        return seq1, seq2
-
-    def train(self, sequence, pattern_dur, epochs, dt = 1.0):
-        '''Trains the network, IPI = 0 here?'''
-        for epoch in range(epochs):
-            for pattern in sequence:
-                # External input current
-                if I is None:
-                    I = np.array((minicolumns, math.ceil(dt))) #Round dt up to the closest integer (avoid 0)
-                for pattern in range(pattern_dur):
-                    self.update_state(dt, I)
-                    self.update_weights(dt, I)
+                        
 
     def recall(self):
         '''Sequence recall given a cue.'''
         pass
 
 if __name__ == '__main__':
-    pass
+    seq = [[0, 1, 2, 3], [1, 2, 3, 4], [2, 3, 4, 0]]
+    hypercolumns, minicolumns = 4, 5
+    nn = BCPNN(hypercolumns, minicolumns)
+    nn.train(seq = seq, pattern_dur = 1, epochs = 1)
 
 # Plots of s, o + I, w at the end
