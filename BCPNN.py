@@ -26,7 +26,7 @@ class BCPNN:
         self.tau_a = tau_a
 
         # State variables
-        self.s = np.zeros((self.n_units, self.n_units))   
+        self.s = np.zeros(self.n_units) 
         self.o = np.ones(self.n_units)
         self.a = np.zeros_like(self.o) 
         self.z_pre = np.zeros(self.n_units) * 1.0 / self.minicolumns
@@ -42,21 +42,23 @@ class BCPNN:
         # Variable histories for plotting 
         self.s_history = []
         self.o_history = []
+        self.w0_history = [] # Example index to check functionality
      
-    def update_state(self, dt = 1.0, noise = 0.0):
+    def update_state(self, I, dt = 1.0, noise = 0.0):
         '''Updates state variables.'''
-
+        print('s: ', self.s)
+        print('beta: ', self.beta)
         # Current 
         self.s += (dt / self.tau_m) * ( + self.g_beta * self.beta  # Bias
-                                        + self.g_I * np.dot(self.w.T, self.o)  # Internal input current
+                                        + self.g_I * np.dot(self.w.T, self.o) + I  # Internal input current
                                         - self.g_a * self.a  # Adaptation
                                         + noise  # This last term is the noise
                                         - self.s)  # s follow all of the s above  
-        self.s_history.append(self.s)
+        self.s_history.append(self.s.copy())
 
         # WTA mechanism
-        #self.o = np.argmax(self.s)
-        self.o_history.append(self.o)
+        self.o = np.argmax(self.s)
+        self.o_history.append(self.o.copy())
 
         # Update the adaptation
         self.a += (dt / self.tau_a) * (self.o - self.a)
@@ -72,36 +74,36 @@ class BCPNN:
 
     def update_weights(self, dt = 5.0, I = None, noise = 0.0):
         '''Updates weights and bias for training.'''
-        # Bias
+        print('beta: ', self.beta)
 
         # Weights  
         eps = 1e-9 # Prevent log(0) as output
         self.w = np.log((self.p_co + eps) / (np.outer(self.p_pre, self.p_post)))
 
+        # Bias
+        self.beta = np.log(self.p_post)
+
     def produce_sequences(self, n_patterns = None, s=0, r=0):
         pass
 
-    def train(self, seq, pattern_dur, epochs, dt = 1.0):
+    def train(self, I, pattern_dur, epochs, dt = 1.0):
         '''Trains the network with a sequence as external input.'''
+
         for epoch in range(epochs): 
             for pattern in seq: # Choose a pattern / time state 
-                    print('s before updating: ', self.s)
-                    self.update_state()
-                    print('The pattern is ', pattern)
-                    print('s after updating: ', self.s)
+                    self.update_state(I = seq)
                     self.update_weights()
-
-
-                        
 
     def recall(self):
         '''Sequence recall given a cue.'''
+
         pass
 
 if __name__ == '__main__':
-    seq = [[0, 1, 2, 3], [1, 2, 3, 4], [2, 3, 4, 0]]
-    hypercolumns, minicolumns = 4, 5
+    seq = [[0, 1, 2], [1, 2, 0], [2, 0, 1]]
+    hypercolumns, minicolumns = 3, 3
     nn = BCPNN(hypercolumns, minicolumns)
-    nn.train(seq = seq, pattern_dur = 1, epochs = 1)
+    nn.train(I = seq, pattern_dur = 1, epochs = 10)
 
-# Plots of s, o + I, w at the end
+    #plt.plot(nn.s_history_history,nn.o_history)
+    #plt.show
