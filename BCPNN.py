@@ -44,21 +44,32 @@ class BCPNN:
         self.o_history = []
         self.w0_history = [] # Example index to check functionality
      
-    def update_state(self, I, dt = 1.0, noise = 0.0):
+    def update_state(self, I, dt = 1.0, noise = 0.0): # External input pattern-wise
         '''Updates state variables.'''
         print('s: ', self.s)
         print('beta: ', self.beta)
+        # Reshape I into a pattern-length vector with one-hot encoded hypercolumns instead of adding for-loops here
+        a = 0 # counter for updating per hypercolumn
+        for hypercolumn in I:
+            # One-hot encode hypercolumns
+            n = I[hypercolumn]
+            I = np.ones(minicolumns)
+            I[n] = 1
+            a = 0 # counter
         # Current 
-        self.s += (dt / self.tau_m) * ( + self.g_beta * self.beta  # Bias
-                                        + self.g_I * np.dot(self.w.T, self.o) + I  # Internal input current
-                                        - self.g_a * self.a  # Adaptation
-                                        + noise  # This last term is the noise
-                                        - self.s)  # s follow all of the s above  
-        self.s_history.append(self.s.copy())
+            self.s[index] += (dt / self.tau_m) * ( + self.g_beta * self.beta  # Bias
+                                            + self.g_I * np.dot(self.w.T, self.o) + I  # Internal input current
+                                            - self.g_a * self.a  # Adaptation
+                                            + noise  # This last term is the noise
+                                            - self.s)  # s follow all of the s above  
+            self.s_history.append(self.s.copy())
 
-        # WTA mechanism
-        self.o = np.argmax(self.s)
-        self.o_history.append(self.o.copy())
+            # WTA mechanism
+            argmax = np.argmax(self.s)
+            self.o[argmax] = 1.0
+            self.o_history.append(self.o.copy())
+            print(self.o)
+
 
         # Update the adaptation
         self.a += (dt / self.tau_a) * (self.o - self.a)
@@ -91,7 +102,7 @@ class BCPNN:
 
         for epoch in range(epochs): 
             for pattern in seq: # Choose a pattern / time state 
-                    self.update_state(I = seq)
+                    self.update_state(I)
                     self.update_weights()
 
     def recall(self):
