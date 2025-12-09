@@ -50,6 +50,8 @@ class BCPNN:
      
     def update_state(self, I, dt = 1.0, noise = 0.0): # External input pattern-wise
         '''Updates state variables.'''
+        print("shapes: s", self.s.shape, "o", self.o.shape, "I", np.array(I).shape)
+        print("vals: min/max p_post", self.p_post.min(), self.p_post.max())
         # Current 
         self.s += (dt / self.tau_m) * ( + self.g_beta * self.beta  # Bias
                                         + self.g_I * np.dot(self.w.T, self.o) + I  # Internal input current
@@ -103,6 +105,7 @@ class BCPNN:
                     for h, mc in enumerate(pattern):
                         index = h * self.minicolumns + mc
                         encoded_pattern[index] = 1
+                        print('one-hot encoded pattern: ', encoded_pattern)
                     self.update_state(I = encoded_pattern, dt = 0.01, noise = 0.0)
                     self.update_weights(dt = 0.01, I = None, noise = 0.0)
 
@@ -117,5 +120,3 @@ if __name__ == '__main__':
     nn = BCPNN(hypercolumns, minicolumns)
     nn.train(I = seq, pattern_dur = 1, epochs = 10)
 
-    plt.plot(nn.s_history, nn.o_history)
-    plt.show
