@@ -37,7 +37,8 @@ class BCPNN:
         self.p_pre = np.ones(self.n_units) * (1.0 / self.minicolumns)
         self.p_post = np.ones(self.n_units) * (1.0 / self.minicolumns)
         self.p_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
-        self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
+        self.beta = np.zeros(self.n_units) # Compatible shape for calculation of s, change afterwards ASAP to correct interpretation
+        #self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
 
         # Variable histories for plotting 
         self.s_history = []
@@ -46,29 +47,19 @@ class BCPNN:
      
     def update_state(self, I, dt = 1.0, noise = 0.0): # External input pattern-wise
         '''Updates state variables.'''
-        print('s: ', self.s)
-        print('beta: ', self.beta)
-        # Reshape I into a pattern-length vector with one-hot encoded hypercolumns instead of adding for-loops here
-        a = 0 # counter for updating per hypercolumn
-        for hypercolumn in I:
-            # One-hot encode hypercolumns
-            n = I[hypercolumn]
-            I = np.ones(minicolumns)
-            I[n] = 1
-            a = 0 # counter
         # Current 
-            self.s[index] += (dt / self.tau_m) * ( + self.g_beta * self.beta  # Bias
-                                            + self.g_I * np.dot(self.w.T, self.o) + I  # Internal input current
-                                            - self.g_a * self.a  # Adaptation
-                                            + noise  # This last term is the noise
-                                            - self.s)  # s follow all of the s above  
-            self.s_history.append(self.s.copy())
+        self.s += (dt / self.tau_m) * ( + self.g_beta * self.beta  # Bias
+                                        + self.g_I * np.dot(self.w.T, self.o) + I  # Internal input current
+                                        - self.g_a * self.a  # Adaptation
+                                        + noise  # This last term is the noise
+                                        - self.s)  # s follow all of the s above  
+        self.s_history.append(self.s.copy())
 
-            # WTA mechanism
-            argmax = np.argmax(self.s)
-            self.o[argmax] = 1.0
-            self.o_history.append(self.o.copy())
-            print(self.o)
+        # WTA mechanism
+        argmax = np.argmax(self.s)
+        self.o[argmax] = 1.0
+        self.o_history.append(self.o.copy())
+        print(self.o)
 
 
         # Update the adaptation
@@ -92,17 +83,24 @@ class BCPNN:
         self.w = np.log((self.p_co + eps) / (np.outer(self.p_pre, self.p_post)))
 
         # Bias
-        self.beta = np.log(self.p_post)
+        # self.beta = np.log(self.p_post) FIX!
 
     def produce_sequences(self, n_patterns = None, s=0, r=0):
         pass
 
     def train(self, I, pattern_dur, epochs, dt = 1.0):
         '''Trains the network with a sequence as external input.'''
-
         for epoch in range(epochs): 
-            for pattern in seq: # Choose a pattern / time state 
-                    self.update_state(I)
+            for pattern in seq: # Choose a pattern / time state
+                    # One-hot encode the pattern here before updating to ensure the shape matches s and o
+                    # Modularize later on
+                    encoded_pattern = []
+                    for hypercolumn in pattern:
+                        hyp_onehot = np.zeros(minicolumns) # one-hot encoding of a single hypercolumn
+                        hyp_onehot[hypercolumn] = 1 # the active unit
+                        encoded_pattern.append(hyp_onehot) # append each encoding to the encoding of the whole pattern
+                        print(encoded_pattern)
+                    self.update_state(I = encoded_pattern)
                     self.update_weights()
 
     def recall(self):
