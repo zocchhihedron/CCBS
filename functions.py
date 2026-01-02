@@ -17,7 +17,6 @@ def update_state(nn, I, g_I = nn.g_I, noise = 0, dt = dt):
                                     - nn.g_a * nn.a  # Adaptation
                                     + noise  # Noise
                                     - nn.s)  # s follow all of the s above      
-    nn.s_history.append(nn.s)
 
     # Unit activations 
     nn.o = strict_max(nn.s, nn.minicolumns)
@@ -55,7 +54,12 @@ def strict_max(x, minicolumns):
 
     return z.reshape(x.size)
 
-def train_pattern(nn, Ndt, I, I_amp = nn.g_I):
+def train_pattern(nn, Ndt, I, I_amp = nn.g_I, save_history = True):
     for i in Ndt:
         update_state(nn, I, g_I = nn.g_I, noise = 0, dt = dt)
         update_weights(nn, noise = 0, dt = dt)
+        if save_history:
+            nn.s_history.append(nn.s)
+            nn.o_history.append(nn.o)
+            nn.w0_history.append(nn.w[0])
+            

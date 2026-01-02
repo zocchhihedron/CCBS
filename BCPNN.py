@@ -1,14 +1,9 @@
 import numpy as np
-import math
-import matplotlib as plt
 
 class BCPNN:
     def __init__(self, hypercolumns, minicolumns, g_beta = 1.0, beta = 1.0, tau_m = 0.02, 
-                 g_I = 1.0, g_a = 1.0, tau_p = 10.0, tau_z_pre = 0.15, tau_z_post = 0.005, tau_a=2.70):
-        '''A simplified model of the BCPNN network with defined network variables and functions for creating
-        sequences, training the network, updating variables and running the network for given sequences.
-        A helper softmax function for the updating function is included. Default values for instance variables 
-        taken from Table 1 in the paper.'''
+                 g_I = 1.0, g_a = 97.0, tau_p = 10.0, tau_z_pre = 0.15, tau_z_post = 0.005, tau_a=2.70):
+        '''A model of the BCPNN network.'''
 
         # Matrix representation
         self.hypercolumns = hypercolumns
@@ -37,86 +32,11 @@ class BCPNN:
         self.p_pre  = np.ones(self.n_units) / self.n_units
         self.p_post = np.ones(self.n_units) / self.n_units
         self.p_co   = np.ones((self.n_units,self.n_units)) / (self.n_units**2)
-        #self.p_pre = np.ones(self.n_units) * (1.0 / self.minicolumns)
-        #self.p_post = np.ones(self.n_units) * (1.0 / self.minicolumns)
-        #self.p_co = np.ones((self.n_units, self.n_units)) * 1.0 / (self.minicolumns ** 2)
-        self.beta = np.zeros(self.n_units) # Compatible shape for calculation of s, change afterwards ASAP to correct interpretation
-        #self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
+        self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
 
-        # Variable histories for plotting 
+        # Variable histories
         self.s_history = []
-        self.o_history = []
-        self.w0_history = [] # Example index to check functionality
-     
-    def update_state(self, I, dt = 1.0, noise = 0.0): # External input pattern-wise
-        '''Updates state variables.'''
-        print("shapes: s", self.s.shape, "o", self.o.shape, "I", np.array(I).shape)
-        print("vals: min/max p_post", self.p_post.min(), self.p_post.max())
-        # Current 
-        self.s += (dt / self.tau_m) * ( + self.g_beta * self.beta  # Bias
-                                        + self.g_I * np.dot(self.w.T, self.o) + I  # Internal input current
-                                        - self.g_a * self.a  # Adaptation
-                                        + noise  # This last term is the noise
-                                        - self.s)  # s follow all of the s above  
-        print('s after state update: ',self.s)
-        self.s_history.append(self.s.copy())
+        self.o_history = [] 
+        self.w0_history = []      
 
-        # WTA mechanism
-        argmax = np.argmax(self.s)
-        self.o = np.zeros(self.n_units) # Reset
-        self.o[argmax] = 1.0
-        self.o_history.append(self.o.copy())
-        print('o after WTA: ', self.o)
-
-
-        # Update the adaptation
-        self.a += (dt / self.tau_a) * (self.o - self.a)
-
-        # Z-traces   
-        self.z_pre += (dt / self.tau_z_pre) * (self.o - self.z_pre)
-        self.z_post += (dt / self.tau_z_post) * (self.o - self.z_post)
-
-        # Probabilities
-        self.p_pre += (dt / self.tau_p) * (self.z_pre - self.p_pre)
-        self.p_post += (dt / self.tau_p) * (self.z_post - self.p_post)
-        self.p_co += (dt / self.tau_p) * (np.outer(self.z_pre, self.z_post) - self.p_co)
-
-    def update_weights(self, dt = 5.0, I = None, noise = 0.0):
-        '''Updates weights and bias for training.'''
-        #print('beta: ', self.beta)
-
-        # Weights  
-        eps = 1e-9 # Prevent log(0) as output
-        self.w = np.log((self.p_co + eps) / (np.outer(self.p_pre, self.p_post) + eps))
-
-        # Bias
-        self.beta = np.log(self.p_post + eps) 
-
-    def produce_sequences(self, n_patterns = None, s=0, r=0):
-        pass
-
-    def train(self, I, pattern_dur, epochs, dt = 0.01):
-        '''Trains the network with a sequence as external input.'''
-        for epoch in range(epochs): 
-            for pattern in seq: # Choose a pattern / time state
-                    # One-hot encode the pattern here before updating to ensure the shape matches s and o
-                    # Modularize later on
-                    encoded_pattern = np.zeros(self.n_units)
-                    for h, mc in enumerate(pattern):
-                        index = h * self.minicolumns + mc
-                        encoded_pattern[index] = 1
-                        print('one-hot encoded pattern: ', encoded_pattern)
-                    self.update_state(I = encoded_pattern, dt = 0.01, noise = 0.0)
-                    self.update_weights(dt = 0.01, I = None, noise = 0.0)
-
-    def recall(self):
-        '''Sequence recall given a cue.'''
-
-        pass
-
-if __name__ == '__main__':
-    seq = [[0, 1, 2], [1, 2, 0], [2, 0, 1]]
-    hypercolumns, minicolumns = 3, 3
-    nn = BCPNN(hypercolumns, minicolumns)
-    nn.train(I = seq, pattern_dur = 1, epochs = 10)
 
