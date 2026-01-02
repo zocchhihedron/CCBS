@@ -8,7 +8,7 @@ nn = BCPNN(hypercolumns, minicolumns)
 
 I = np.ones(nn.minicolumns)
 
-def update_state(nn, g_I = nn.g_I, noise = 0, dt = dt):
+def update_state(nn, I, g_I = nn.g_I, noise = 0, dt = dt):
     '''Updates state variables per time unit without learning.'''
 
     # Current
@@ -17,14 +17,45 @@ def update_state(nn, g_I = nn.g_I, noise = 0, dt = dt):
                                     - nn.g_a * nn.a  # Adaptation
                                     + noise  # Noise
                                     - nn.s)  # s follow all of the s above      
+    nn.s_history.append(nn.s)
 
+    # Unit activations 
+    nn.o = strict_max(nn.s, nn.minicolumns)
 
+    # Adaptation
+    nn.a += (dt / nn.tau_a) * (nn.o - nn.a)
 
+    # Z-traces   
+    nn.z_pre += (dt / nn.tau_z_pre) * (nn.o - nn.z_pre)
+    nn.z_post += (dt / nn.tau_z_post) * (nn.o - nn.z_post)
 
+    # Probabilities
+    nn.p_pre += (dt / nn.tau_p) * (nn.z_pre - nn.p_pre)
+    nn.p_post += (dt / nn.tau_p) * (nn.z_post - nn.p_post)
+    nn.p_co += (dt / nn.tau_p) * (np.outer(nn.z_pre, nn.z_post) - nn.p_co)
 
+def update_weights(nn, noise = 0, dt = dt):
+    '''Updates weights and biases per time unit for network training.'''
 
+    # Weights  
+    eps = 1e-9 # Prevent log(0) as output
+    nn.w = np.log((nn.p_co + eps) / (np.outer(nn.p_pre, nn.p_post) + eps))
 
-def train_pattern(P, nn, Ndt, I_amp):
-    pass
+    # Bias
+    nn.beta = np.log(nn.p_post + eps) 
 
-print(nn.beta)
+def strict_max(x, minicolumns):
+    '''Reshapes the current vector into the unit activation vector.'''
+
+    x = np.reshape(x, (x.size // minicolumns, minicolumns))
+    z = np.zeros_like(x)
+    maxes = np.argmax(x, axis=1)
+    for max_index, max_aux in enumerate(maxes):
+        z[max_index, max_aux] = 1
+
+    return z.reshape(x.size)
+
+def train_pattern(nn, Ndt, I, I_amp = nn.g_I):
+    for i in Ndt:
+        update_state(nn, I, g_I = nn.g_I, noise = 0, dt = dt)
+        update_weights(nn, noise = 0, dt = dt)
