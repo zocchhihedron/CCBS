@@ -67,42 +67,17 @@ def train_pattern(nn, Ndt, I, I_amp = nn.g_I, learning = True, save_history = Tr
             if learning:
                 nn.w0_history.append(nn.w[0])
             
-def recall(nn, Ndt, I_cue=None, noise=0.0, reset_state=True, save_history=True):
-    '''Recalls a sequence given a cueing input.'''
+def recall(nn, I_cue, cue_steps, recall_steps):
+    # Cueing with first element of the input
+    for _ in range(cue_steps):
+        update_state(nn, I_cue)
 
-    if reset_state:
-        nn.s[:] = 0.0
-        nn.o[:] = 0.0
-        nn.a[:] = 0.0
-        nn.z_pre[:] = 0.0
-        nn.z_post[:] = 0.0
-
-    if I_cue is None:
-        I_cue = np.zeros(nn.n_units)
-
-    if save_history:
-        nn.s_history = []
-        nn.o_history = []
-
-    for _ in range(Ndt):
-        update_state(
-            nn,
-            I=I_cue,
-            g_I=nn.g_I,
-            noise=noise,
-            dt=dt
-        )
-
-        if save_history:
-            nn.s_history.append(nn.s.copy())
-            nn.o_history.append(nn.o.copy())
-
-    return np.array(nn.o_history)
+    # Recall from network dynamics 
+    I_zero = np.zeros(nn.n_units)
+    for _ in range(recall_steps):
+        update_state(nn, I_zero)
 
 
 if __name__ == '__main__':
-    print(I)
-    train_pattern(nn = nn, Ndt = 10, I = I)
-    recall = recall(nn = nn, Ndt = 5, I_cue = I[0])
-    print(recall)
+    pass
 
