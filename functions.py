@@ -1,12 +1,13 @@
 import numpy as np
+import matplotlib 
 from BCPNN import BCPNN
 
 dt = 0.01
 
-hypercolumns, minicolumns = 5, 3
+hypercolumns, minicolumns = 2, 3
 nn = BCPNN(hypercolumns, minicolumns)
 
-I = np.ones(nn.minicolumns)
+I = np.ones(nn.minicolumns * nn.hypercolumns)
 
 def update_state(nn, I, g_I = nn.g_I, noise = 0, dt = dt):
     '''Updates state variables per time unit without learning.'''
@@ -16,7 +17,7 @@ def update_state(nn, I, g_I = nn.g_I, noise = 0, dt = dt):
                                     + nn.g_I * np.dot(nn.w.T, nn.o) + I  # Input current
                                     - nn.g_a * nn.a  # Adaptation
                                     + noise  # Noise
-                                    - nn.s)  # s follow all of the s above      
+                                    - nn.s)  # Current   
 
     # Unit activations 
     nn.o = strict_max(nn.s, nn.minicolumns)
@@ -54,12 +55,54 @@ def strict_max(x, minicolumns):
 
     return z.reshape(x.size)
 
-def train_pattern(nn, Ndt, I, I_amp = nn.g_I, save_history = True):
-    for i in Ndt:
+def train_pattern(nn, Ndt, I, I_amp = nn.g_I, learning = True, save_history = True):
+    '''Trains the network on a pattern.'''
+    for i in (0, Ndt):
         update_state(nn, I, g_I = nn.g_I, noise = 0, dt = dt)
-        update_weights(nn, noise = 0, dt = dt)
+        if learning:
+            update_weights(nn, noise = 0, dt = dt)
         if save_history:
             nn.s_history.append(nn.s)
             nn.o_history.append(nn.o)
-            nn.w0_history.append(nn.w[0])
+            if learning:
+                nn.w0_history.append(nn.w[0])
             
+def recall(nn, Ndt, I_cue=None, noise=0.0, reset_state=True, save_history=True):
+    '''Recalls a sequence given a cueing input.'''
+
+    if reset_state:
+        nn.s[:] = 0.0
+        nn.o[:] = 0.0
+        nn.a[:] = 0.0
+        nn.z_pre[:] = 0.0
+        nn.z_post[:] = 0.0
+
+    if I_cue is None:
+        I_cue = np.zeros(nn.n_units)
+
+    if save_history:
+        nn.s_history = []
+        nn.o_history = []
+
+    for _ in range(Ndt):
+        update_state(
+            nn,
+            I=I_cue,
+            g_I=nn.g_I,
+            noise=noise,
+            dt=dt
+        )
+
+        if save_history:
+            nn.s_history.append(nn.s.copy())
+            nn.o_history.append(nn.o.copy())
+
+    return np.array(nn.o_history)
+
+
+if __name__ == '__main__':
+    print(I)
+    train_pattern(nn = nn, Ndt = 10, I = I)
+    recall = recall(nn = nn, Ndt = 5, I_cue = I[0])
+    print(recall)
+

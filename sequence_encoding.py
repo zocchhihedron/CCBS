@@ -29,6 +29,8 @@ def sequence(n_patterns, minicolumns, patterns):
         seq[i] = patterns[i]
     return seq
 
+
+
 hyp_1 = hypercolumn_state(3, 2)
 hyp_2 = hypercolumn_state(3, 1)
 hyp_3 = hypercolumn_state(3,2)
