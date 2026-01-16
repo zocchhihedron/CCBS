@@ -57,6 +57,8 @@ def strict_max(x, minicolumns):
 
 def train_pattern(nn, Ndt, I, I_amp = nn.g_I, learning = True, save_history = True):
     '''Trains the network on a pattern.'''
+    if I == None:
+        I = np.zeros(nn.hypercolumns*nn.minicolumns)
     for i in (0, Ndt):
         update_state(nn, I, g_I = nn.g_I, noise = 0, dt = dt)
         if learning:
@@ -68,16 +70,16 @@ def train_pattern(nn, Ndt, I, I_amp = nn.g_I, learning = True, save_history = Tr
                 nn.w0_history.append(nn.w[0])
             
 def recall(nn, I_cue, cue_steps, recall_steps):
+    nn.o_history = []
     # Cueing with first element of the input
-    for _ in range(cue_steps):
-        update_state(nn, I_cue)
-
-    # Recall from network dynamics 
     I_zero = np.zeros(nn.n_units)
-    for _ in range(recall_steps):
-        update_state(nn, I_zero)
+    for _ in range(cue_steps):
+        update_state(nn=nn, I=I_cue)
+    print(nn.o_history)
 
 
 if __name__ == '__main__':
-    pass
+    nn = BCPNN(hypercolumns = 2, minicolumns = 3)
+    train_pattern(nn = nn, Ndt = 10, I= [1,0,0,0,2,0])
+    recall(nn = nn, I_cue =[1,0,0,0,0,0], cue_steps = 5, recall_steps = 3)
 
