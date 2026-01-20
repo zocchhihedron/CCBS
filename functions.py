@@ -1,12 +1,7 @@
 import numpy as np
 from BCPNN import BCPNN
 
-dt = 0.01
-hypercolumns, minicolumns = 3, 5
-nn = BCPNN(hypercolumns, minicolumns)
-I = np.ones(nn.minicolumns * nn.hypercolumns)
-
-def update_state(nn, I, g_I = nn.g_I, noise = 0, dt = dt):
+def update_state(nn, dt, I, g_I, noise = 0):
     '''Updates state variables per time unit without learning.'''
 
     # Current
@@ -31,7 +26,7 @@ def update_state(nn, I, g_I = nn.g_I, noise = 0, dt = dt):
     nn.p_post += (dt / nn.tau_p) * (nn.z_post - nn.p_post)
     nn.p_co += (dt / nn.tau_p) * (np.outer(nn.z_pre, nn.z_post) - nn.p_co)
 
-def update_weights(nn, noise = 0, dt = dt):
+def update_weights(nn, dt, noise = 0):
     '''Updates weights and biases per time unit for network training.'''
 
     # Weights  
@@ -43,7 +38,6 @@ def update_weights(nn, noise = 0, dt = dt):
 
 def strict_max(x, minicolumns):
     '''Reshapes the current vector into the unit activation vector.'''
-
     x = np.reshape(x, (x.size // minicolumns, minicolumns))
     z = np.zeros_like(x)
     maxes = np.argmax(x, axis=1)
@@ -52,12 +46,12 @@ def strict_max(x, minicolumns):
 
     return z.reshape(x.size)
 
-def train_pattern(nn, Ndt, I, I_amp = nn.g_I, learning = True, save_history = True):
+def train_pattern(nn, dt, g_I, Ndt, I, I_amp, learning = True, save_history = True):
     '''Trains the network on a pattern.'''
     if I.all() == None:
         I = np.zeros(nn.hypercolumns*nn.minicolumns)
     for i in range(Ndt):
-        update_state(nn, I, g_I = nn.g_I, noise = 0, dt = dt)
+        update_state(nn, dt = dt, I = I, g_I = g_I, noise = 0)
         if learning:
             update_weights(nn, noise = 0, dt = dt)
         if save_history:
@@ -66,42 +60,43 @@ def train_pattern(nn, Ndt, I, I_amp = nn.g_I, learning = True, save_history = Tr
             if learning:
                 nn.w0_history.append(nn.w[0])
 
-def train_sequence(nn, Ndt, seq, I_amp = nn.g_I, learning = True, save_history = True):
+def train_sequence(nn, dt, Ndt, seq, I_amp, g_I, learning = True, save_history = True):
     '''Trains the network on a sequence of patterns.'''
-
     for pattern in seq:
-        train_pattern(nn, Ndt, pattern, I_amp = nn.g_I, learning = True, save_history = True)
+        train_pattern(nn, dt = dt, Ndt = Ndt, I = pattern, I_amp = I_amp, g_I = g_I, learning = True, save_history = True)
 
-def recall(nn, I_cue, no_patterns, cue_steps, recall_steps):
+def recall(nn, dt, g_I, I_cue, no_patterns, cue_steps, recall_steps):
     '''Recalls a sequence learned by the network by updating the network state without updating weights and biases.'''
     nn.o_history = []
     # Cueing with first element of the input
     I_zero = np.zeros(nn.n_units)
     for _ in range(no_patterns):
         for _ in range(cue_steps):
-            update_state(nn=nn, I=I_cue)
+            update_state(nn=nn, I=I_cue, dt=dt, g_I=g_I)
         # The recalled patterns are saved with each step of recall
         nn.o_history.append(nn.o)
-        print(nn.o)
     # The history of the unit activations is the recalled sequence
-    #print(nn.o_history)
+    print(nn.o_history)
 
-def pattern(indices, hypercolumns, minicolumns):
+def one_hot_encode(pattern, hypercolumns, minicolumns):
     '''Reshapes an indexed pattern representation into a one-hot encoded
     hypercolumn representation'''
     x = np.zeros(hypercolumns * minicolumns)
-    for hyp, minic in enumerate(indices):
+    for hyp, minic in enumerate(pattern):
         x[hyp * minicolumns + minic] = 1
     return x
 
+
 if __name__ == '__main__':
     dt = 0.01
-    hypercolumns, minicolumns = 3, 5
+    hypercolumns, minicolumns = 2, 3
     nn = BCPNN(hypercolumns, minicolumns)
-    seq = np.array([pattern([0,1,2], 3, 5), pattern([1,1,2], 3, 5)])
+    seq = np.array([one_hot_encode([0,1], hypercolumns, minicolumns), one_hot_encode([1,1], hypercolumns, minicolumns)])
     no_patterns = seq.shape[0]
-    train_sequence(nn = nn, Ndt = 10, seq = seq, I_amp = nn.g_I, learning = True, save_history = True)
-    recall(nn, I_cue = np.zeros(15), cue_steps = 5, no_patterns = no_patterns, recall_steps = 10)
+    train_sequence(nn = nn, dt = dt, Ndt = 100, seq = seq, I_amp = nn.g_I, g_I = nn.g_I, learning = True, save_history = True)
+    recall(nn, I_cue = np.zeros(15), dt = dt, g_I = nn.g_I, cue_steps = 5, no_patterns = no_patterns, recall_steps = 10)
+
+    # Print certain state variables & weights
 
 
 
