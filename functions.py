@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib as plt
 from BCPNN import BCPNN
 
 dt = 0.01
@@ -55,9 +54,9 @@ def strict_max(x, minicolumns):
 
 def train_pattern(nn, Ndt, I, I_amp = nn.g_I, learning = True, save_history = True):
     '''Trains the network on a pattern.'''
-    if I == None:
+    if I.all() == None:
         I = np.zeros(nn.hypercolumns*nn.minicolumns)
-    for i in (0, Ndt):
+    for i in range(Ndt):
         update_state(nn, I, g_I = nn.g_I, noise = 0, dt = dt)
         if learning:
             update_weights(nn, noise = 0, dt = dt)
@@ -69,19 +68,41 @@ def train_pattern(nn, Ndt, I, I_amp = nn.g_I, learning = True, save_history = Tr
 
 def train_sequence(nn, Ndt, seq, I_amp = nn.g_I, learning = True, save_history = True):
     '''Trains the network on a sequence of patterns.'''
+
     for pattern in seq:
         train_pattern(nn, Ndt, pattern, I_amp = nn.g_I, learning = True, save_history = True)
 
-def recall(nn, I_cue, cue_steps, recall_steps):
+def recall(nn, I_cue, no_patterns, cue_steps, recall_steps):
     '''Recalls a sequence learned by the network by updating the network state without updating weights and biases.'''
     nn.o_history = []
     # Cueing with first element of the input
     I_zero = np.zeros(nn.n_units)
-    for _ in range(cue_steps):
-        update_state(nn=nn, I=I_cue)
-    print(nn.o_history)
+    for _ in range(no_patterns):
+        for _ in range(cue_steps):
+            update_state(nn=nn, I=I_cue)
+        # The recalled patterns are saved with each step of recall
+        nn.o_history.append(nn.o)
+        print(nn.o)
+    # The history of the unit activations is the recalled sequence
+    #print(nn.o_history)
 
+def pattern(indices, hypercolumns, minicolumns):
+    '''Reshapes an indexed pattern representation into a one-hot encoded
+    hypercolumn representation'''
+    x = np.zeros(hypercolumns * minicolumns)
+    for hyp, minic in enumerate(indices):
+        x[hyp * minicolumns + minic] = 1
+    return x
 
 if __name__ == '__main__':
-    pass
+    dt = 0.01
+    hypercolumns, minicolumns = 3, 5
+    nn = BCPNN(hypercolumns, minicolumns)
+    seq = np.array([pattern([0,1,2], 3, 5), pattern([1,1,2], 3, 5)])
+    no_patterns = seq.shape[0]
+    train_sequence(nn = nn, Ndt = 10, seq = seq, I_amp = nn.g_I, learning = True, save_history = True)
+    recall(nn, I_cue = np.zeros(15), cue_steps = 5, no_patterns = no_patterns, recall_steps = 10)
+
+
+
 
