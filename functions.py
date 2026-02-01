@@ -62,7 +62,7 @@ def train_pattern(nn, dt, g_I, Ndt, I, learning = True, save_history = True):
             nn.o_history.append(nn.o.copy())
             nn.s_history.append(nn.s.copy())
             if learning:
-                nn.w0_history.append(nn.w[0])
+                nn.w_ij_history.append(nn.w[i_w, j_w])
 
 def train_sequence(nn, dt, Ndt, seq, g_I, learning = True, save_history = True):
     '''Trains the network on a sequence of patterns.'''
@@ -97,17 +97,77 @@ def one_hot_encode(pattern, hypercolumns, minicolumns):
 
     return x
 
+def plot_o(nn):
+    o = np.array(nn.o_history)
+    plt.figure(figsize=(10,4))
+    plt.imshow(o.T, aspect='auto', cmap='Greys')
+    plt.xlabel("Time step")
+    plt.ylabel("Unit index")
+    plt.title("Unit activations o(t)")
+    plt.colorbar(label="Activity")
+    plt.tight_layout()
+    plt.show()
+
+def plot_s(nn):
+    s = np.array(nn.s_history)
+    plt.figure(figsize=(10,4))
+    plt.imshow(s.T, aspect='auto', cmap='viridis')
+    plt.xlabel("Time step")
+    plt.ylabel("Unit index")
+    plt.title("Membrane currents s(t)")
+    plt.colorbar(label="Current")
+    plt.tight_layout()
+    plt.show()
+
+def plot_weight(nn, i, j):
+    w = np.array(nn.w_ij_history)
+    plt.figure(figsize=(8,3))
+    plt.plot(w)
+    plt.xlabel("Time step")
+    plt.ylabel(f"w[{i},{j}]")
+    plt.title("Synaptic weight evolution")
+    plt.tight_layout()
+    plt.show()
+
+
 
 if __name__ == '__main__':
-    pass
 
     dt = 0.01
-    hypercolumns, minicolumns = 2, 3
+    hypercolumns, minicolumns = 2, 5
     nn = BCPNN(hypercolumns, minicolumns)
-    seq = np.array([one_hot_encode([0,1], hypercolumns, minicolumns), one_hot_encode([1,1], hypercolumns, minicolumns)])
-    no_patterns = seq.shape[0]
-    train_sequence(nn = nn, dt = dt, Ndt = 100, seq = seq, g_I = nn.g_I, learning = True, save_history = True)
-    recall(nn, I_cue = np.zeros(nn.n_units), dt = dt, g_I = nn.g_I, cue_steps = 5, no_patterns = no_patterns, recall_steps = 10)
+
+    # Melody: (voice1, voice2)
+    melody = [
+        [0, 2],
+        [1, 2],
+        [2, 3],
+        [3, 4],
+    ]
+
+    seq = np.array([
+        one_hot_encode(p, hypercolumns, minicolumns)
+        for p in melody
+    ])
+
+    # Choose a weight to track
+    i_w, j_w = 0, 7
+    nn.w_ij_history = []
+
+    # Training
+    for pattern in seq:
+        for _ in range(50):
+            update_state(nn, dt=dt, I=pattern, g_I=nn.g_I)
+            update_weights(nn, dt=dt)
+
+            nn.o_history.append(nn.o.copy())
+            nn.s_history.append(nn.s.copy())
+            nn.w_ij_history.append(nn.w[i_w, j_w])
+
+    # Plots
+    plot_o(nn)
+    plot_s(nn)
+    plot_weight(nn, i_w, j_w)
     
 
 
