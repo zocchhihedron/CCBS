@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from BCPNN import BCPNN
 
 def update_state(nn, dt, I, g_I, noise = 0):
@@ -98,6 +99,7 @@ def one_hot_encode(pattern, hypercolumns, minicolumns):
 
 
 if __name__ == '__main__':
+    pass
 
     dt = 0.01
     hypercolumns, minicolumns = 2, 3
@@ -106,9 +108,7 @@ if __name__ == '__main__':
     no_patterns = seq.shape[0]
     train_sequence(nn = nn, dt = dt, Ndt = 100, seq = seq, g_I = nn.g_I, learning = True, save_history = True)
     recall(nn, I_cue = np.zeros(nn.n_units), dt = dt, g_I = nn.g_I, cue_steps = 5, no_patterns = no_patterns, recall_steps = 10)
-
-    # Print certain state variables & weights
-
+    
 
 
 
