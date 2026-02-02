@@ -97,6 +97,11 @@ def one_hot_encode(pattern, hypercolumns, minicolumns):
 
     return x
 
+def clean_history(nn):
+    nn.s_history = []
+    nn.o_history = [] 
+    nn.w_ij_history = []      
+
 def plot_o(nn):
     o = np.array(nn.o_history)
     plt.figure(figsize=(10,4))
@@ -130,15 +135,17 @@ def plot_weight(nn, i, j):
     plt.show()
 
 
-
 if __name__ == '__main__':
 
     dt = 0.01
     hypercolumns, minicolumns = 2, 5
     nn = BCPNN(hypercolumns, minicolumns)
 
-    # Melody: (voice1, voice2)
-    melody = [
+    #print(nn.o_history)
+    clean_history(nn)
+    #print(nn.o_history)
+
+    sequence = [
         [0, 2],
         [1, 2],
         [2, 3],
@@ -147,14 +154,12 @@ if __name__ == '__main__':
 
     seq = np.array([
         one_hot_encode(p, hypercolumns, minicolumns)
-        for p in melody
+        for p in sequence
     ])
 
-    # Choose a weight to track
-    i_w, j_w = 0, 7
+    i_w, j_w = 0, 1
     nn.w_ij_history = []
 
-    # Training
     for pattern in seq:
         for _ in range(50):
             update_state(nn, dt=dt, I=pattern, g_I=nn.g_I)
@@ -164,7 +169,8 @@ if __name__ == '__main__':
             nn.s_history.append(nn.s.copy())
             nn.w_ij_history.append(nn.w[i_w, j_w])
 
-    # Plots
+    #print(nn.o_history)
+
     plot_o(nn)
     plot_s(nn)
     plot_weight(nn, i_w, j_w)
