@@ -138,18 +138,16 @@ def plot_weight(nn, i, j):
 if __name__ == '__main__':
 
     dt = 0.01
-    hypercolumns, minicolumns = 2, 5
+    hypercolumns, minicolumns = 2, 3
     nn = BCPNN(hypercolumns, minicolumns)
 
-    #print(nn.o_history)
+    print(nn.o_history)
     clean_history(nn)
-    #print(nn.o_history)
+    print(nn.o_history)
 
     sequence = [
         [0, 2],
-        [1, 2],
-        [2, 3],
-        [3, 4],
+        [1, 2]
     ]
 
     seq = np.array([
@@ -169,7 +167,7 @@ if __name__ == '__main__':
             nn.s_history.append(nn.s.copy())
             nn.w_ij_history.append(nn.w[i_w, j_w])
 
-    #print(nn.o_history)
+    print(nn.o_history)
 
     plot_o(nn)
     plot_s(nn)

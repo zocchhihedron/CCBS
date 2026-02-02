@@ -2,7 +2,7 @@ import numpy as np
 
 class BCPNN:
     def __init__(self, hypercolumns, minicolumns, g_beta = 1.0, beta = 1.0, tau_m = 0.02, 
-                 g_I = 1.0, g_a = 97.0, tau_p = 10.0, tau_z_pre = 0.15, tau_z_post = 0.005, tau_a=2.70):
+                 g_I = 10.0, g_a = 97.0, tau_p = 10.0, tau_z_pre = 0.15, tau_z_post = 0.005, tau_a=2.70):
         '''A model of the BCPNN network.'''
 
         # Matrix representation
