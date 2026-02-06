@@ -1,13 +1,15 @@
 import numpy as np
+import random
 import matplotlib.pyplot as plt
 from BCPNN import BCPNN
 
-def update_state(nn, dt, I, g_I, noise = 0):
+
+def update_state(nn, dt, I, noise = 0):
     '''Updates state variables per time unit without learning.'''
 
     # Current
     nn.s += (dt / nn.tau_m) * ( + nn.g_beta * nn.beta  # Bias
-                                    + nn.g_I * np.dot(nn.w.T, nn.o) + I  # Input current
+                                    + nn.g_I * I + np.dot(nn.w.T, nn.o)  # Input current
                                     - nn.g_a * nn.a  # Adaptation
                                     + noise  # Noise
                                     - nn.s)  # Current   
@@ -49,13 +51,13 @@ def strict_max(x, minicolumns):
 
     return z.reshape(x.size)
 
-def train_pattern(nn, dt, g_I, Ndt, I, learning = True, save_history = True):
+def train_pattern(nn, dt, Ndt, I, learning = True, save_history = True):
     '''Trains the network on a pattern.'''
 
     if I is None:
         I = np.zeros(nn.n_units)
     for i in range(Ndt):
-        update_state(nn, dt = dt, I = I, g_I = g_I, noise = 0)
+        update_state(nn, dt = dt, I = I, noise = 0)
         if learning:
             update_weights(nn, noise = 0, dt = dt)
         if save_history:
@@ -64,24 +66,24 @@ def train_pattern(nn, dt, g_I, Ndt, I, learning = True, save_history = True):
             if learning:
                 nn.w_ij_history.append(nn.w[i_w, j_w])
 
-def train_sequence(nn, dt, Ndt, seq, g_I, learning = True, save_history = True):
+def train_sequence(nn, dt, Ndt, seq, learning = True, save_history = True):
     '''Trains the network on a sequence of patterns.'''
 
     for pattern in seq:
-        train_pattern(nn, dt = dt, Ndt = Ndt, I = pattern, g_I = g_I, learning = True, save_history = True)
+        train_pattern(nn, dt = dt, Ndt = Ndt, I = pattern, learning = True, save_history = True)
 
-def recall(nn, dt, g_I, I_cue, no_patterns, cue_steps, recall_steps):
+def recall(nn, dt, I_cue, no_patterns, cue_steps, recall_steps):
     '''Recalls a sequence learned by the network by updating the network state without updating weights and biases.'''
 
     nn.o_history = []
 
     # Cueing 
     for _ in range(cue_steps):
-        update_state(nn, I=I_cue, dt = dt, g_I = g_I)
+        update_state(nn, I=I_cue, dt = dt)
         
     # Free recall
     for _ in range(recall_steps):
-        update_state(nn, dt = dt, I = np.zeros(nn.n_units), g_I = g_I)
+        update_state(nn, dt = dt, I = np.zeros(nn.n_units))
         nn.o_history.append(nn.o.copy())
 
     # The history of the unit activations is the recalled sequence
@@ -97,10 +99,19 @@ def one_hot_encode(pattern, hypercolumns, minicolumns):
 
     return x
 
+def create_sequence(n_patterns, hypercolumns, minicolumns):
+    '''Creates a randomized sequence'''
+    seq = []
+    for n in range(0, n_patterns):
+        pattern = []
+        for index in range(0, hypercolumns):
+            pattern.append(random.randint(0,minicolumns-1))
+        seq.append(pattern)
+    return seq
+
 def clean_history(nn):
     nn.s_history = []
-    nn.o_history = [] 
-    nn.w_ij_history = []      
+    nn.o_history = []    
 
 def plot_o(nn):
     o = np.array(nn.o_history)
@@ -124,54 +135,30 @@ def plot_s(nn):
     plt.tight_layout()
     plt.show()
 
-def plot_weight(nn, i, j):
-    w = np.array(nn.w_ij_history)
-    plt.figure(figsize=(8,3))
-    plt.plot(w)
-    plt.xlabel("Time step")
-    plt.ylabel(f"w[{i},{j}]")
-    plt.title("Synaptic weight evolution")
-    plt.tight_layout()
-    plt.show()
-
 
 if __name__ == '__main__':
 
     dt = 0.01
-    hypercolumns, minicolumns = 2, 3
+    hypercolumns = 2
+    minicolumns = 3
+    n_patterns = 3
     nn = BCPNN(hypercolumns, minicolumns)
 
-    print(nn.o_history)
     clean_history(nn)
-    print(nn.o_history)
 
-    sequence = [
-        [0, 2],
-        [1, 2]
-    ]
-
-    seq = np.array([
-        one_hot_encode(p, hypercolumns, minicolumns)
-        for p in sequence
-    ])
-
-    i_w, j_w = 0, 1
-    nn.w_ij_history = []
+    seq = np.array([one_hot_encode(p, hypercolumns, minicolumns) for p in create_sequence(n_patterns, hypercolumns, minicolumns)])
 
     for pattern in seq:
         for _ in range(50):
-            update_state(nn, dt=dt, I=pattern, g_I=nn.g_I)
-            update_weights(nn, dt=dt)
+            update_state(nn, dt, pattern)
+            update_weights(nn, dt)
 
             nn.o_history.append(nn.o.copy())
             nn.s_history.append(nn.s.copy())
-            nn.w_ij_history.append(nn.w[i_w, j_w])
-
-    print(nn.o_history)
 
     plot_o(nn)
     plot_s(nn)
-    plot_weight(nn, i_w, j_w)
+
     
 
 
