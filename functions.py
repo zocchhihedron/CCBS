@@ -64,7 +64,7 @@ def train_pattern(nn, dt, Ndt, I, learning = True, save_history = True):
             nn.o_history.append(nn.o.copy())
             nn.s_history.append(nn.s.copy())
             if learning:
-                nn.w_ij_history.append(nn.w[i_w, j_w])
+                nn.w_01_history.append(nn.w[0, 1])
 
 def train_sequence(nn, dt, Ndt, seq, learning = True, save_history = True):
     '''Trains the network on a sequence of patterns.'''
@@ -86,9 +86,6 @@ def recall(nn, dt, I_cue, no_patterns, cue_steps, recall_steps):
         update_state(nn, dt = dt, I = np.zeros(nn.n_units))
         nn.o_history.append(nn.o.copy())
 
-    # The history of the unit activations is the recalled sequence
-    print(nn.o_history)
-
 def one_hot_encode(pattern, hypercolumns, minicolumns):
     '''Reshapes an indexed pattern representation into a one-hot encoded
     hypercolumn representation'''
@@ -109,7 +106,10 @@ def create_sequence(n_patterns, hypercolumns, minicolumns):
         seq.append(pattern)
     return seq
 
-def clean_history(nn):
+def reset_state_probabilities():
+    pass
+
+def reset_history(nn):
     nn.s_history = []
     nn.o_history = []    
 
@@ -139,22 +139,20 @@ def plot_s(nn):
 if __name__ == '__main__':
 
     dt = 0.01
+    Ndt = 50
     hypercolumns = 2
     minicolumns = 3
     n_patterns = 3
     nn = BCPNN(hypercolumns, minicolumns)
 
-    clean_history(nn)
+    reset_history(nn)
 
-    seq = np.array([one_hot_encode(p, hypercolumns, minicolumns) for p in create_sequence(n_patterns, hypercolumns, minicolumns)])
+    seq = create_sequence(n_patterns, hypercolumns, minicolumns)
+    print(seq)
+    seq = np.array([one_hot_encode(p, hypercolumns, minicolumns) for p in seq])
+    print(seq)
 
-    for pattern in seq:
-        for _ in range(50):
-            update_state(nn, dt, pattern)
-            update_weights(nn, dt)
-
-            nn.o_history.append(nn.o.copy())
-            nn.s_history.append(nn.s.copy())
+    train_sequence(nn, dt, Ndt, seq)
 
     plot_o(nn)
     plot_s(nn)
