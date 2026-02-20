@@ -72,7 +72,7 @@ def train_sequence(nn, dt, Ndt, seq, learning = True, save_history = True):
     for pattern in seq:
         train_pattern(nn, dt = dt, Ndt = Ndt, I = pattern, learning = True, save_history = True)
 
-def recall(nn, dt, I_cue, no_patterns, cue_steps, recall_steps):
+def recall(nn, dt, I_cue, cue_steps, recall_steps):
     '''Recalls a sequence learned by the network by updating the network state without updating weights and biases.'''
 
     nn.o_history = []
@@ -106,8 +106,12 @@ def create_sequence(n_patterns, hypercolumns, minicolumns):
         seq.append(pattern)
     return seq
 
-def reset_state_probabilities():
-    pass
+def reset_state_probabilities(nn):
+    nn.w = np.zeros((nn.n_units, nn.n_units))
+    nn.p_pre  = np.ones(nn.n_units) / nn.n_units
+    nn.p_post = np.ones(nn.n_units) / nn.n_units
+    nn.p_co   = np.ones((nn.n_units,nn.n_units)) / (nn.n_units**2)
+    nn.beta = np.log(np.ones_like(nn.o) * (1.0 / nn.minicolumns))
 
 def reset_history(nn):
     nn.s_history = []
@@ -136,19 +140,31 @@ def plot_s(nn):
     plt.show()
 
 
+def plot_weight(nn):
+    w = np.array(nn.w_01_history)
+    plt.figure(figsize=(8,3))
+    plt.plot(w)
+    plt.xlabel("Time step")
+    plt.ylabel(f"w[{0},{1}]")
+    plt.title("Synaptic weight evolution")
+    plt.tight_layout()
+    plt.show()
+
+
 if __name__ == '__main__':
 
     dt = 0.01
     Ndt = 50
-    hypercolumns = 2
+    hypercolumns = 3
     minicolumns = 3
     n_patterns = 3
     nn = BCPNN(hypercolumns, minicolumns)
 
     reset_history(nn)
+    reset_state_probabilities(nn)
 
-    seq = create_sequence(n_patterns, hypercolumns, minicolumns)
-    print(seq)
+    #seq = create_sequence(n_patterns, hypercolumns, minicolumns)
+    seq = [[0, 1, 2], [2, 0, 1], [1, 2, 0]]
     seq = np.array([one_hot_encode(p, hypercolumns, minicolumns) for p in seq])
     print(seq)
 
@@ -156,6 +172,8 @@ if __name__ == '__main__':
 
     plot_o(nn)
     plot_s(nn)
+    plot_weight(nn)
+
 
     
 
