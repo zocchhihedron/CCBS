@@ -24,6 +24,8 @@ def update_state(nn, dt, I, noise = 0):
     nn.z_pre += (dt / nn.tau_z_pre) * (nn.o - nn.z_pre)
     nn.z_post += (dt / nn.tau_z_post) * (nn.o - nn.z_post)
 
+    # nmda & ampa distinction
+
     # Probabilities
     nn.p_pre += (dt / nn.tau_p) * (nn.z_pre - nn.p_pre)
     nn.p_post += (dt / nn.tau_p) * (nn.z_post - nn.p_post)
@@ -63,14 +65,25 @@ def train_pattern(nn, dt, Ndt, I, learning = True, save_history = True):
         if save_history:
             nn.o_history.append(nn.o.copy())
             nn.s_history.append(nn.s.copy())
+            # Function for updating history (include p,z ..)
+            # Add time stamps (linearly (t + dt  global time axis for all)
             if learning:
                 nn.w_01_history.append(nn.w[0, 1])
 
-def train_sequence(nn, dt, Ndt, seq, learning = True, save_history = True):
+def pause(nn, dt, pause_steps):
+    for i in pause_steps:
+        update_state(nn, dt, I=np.zeros(nn.n_units), noise = 0)
+        nn.o_history.append(nn.o.copy())
+        nn.s_history.append(nn.s.copy())
+        nn.w_01_history.append(nn.w[0, 1])
+
+
+def train_sequence(nn, dt, Ndt, seq, learning = True, save_history = True, IPI=0): 
     '''Trains the network on a sequence of patterns.'''
 
     for pattern in seq:
         train_pattern(nn, dt = dt, Ndt = Ndt, I = pattern, learning = True, save_history = True)
+        pause(nn, dt, pause_steps = IPI) # = IPI here
 
 def recall(nn, dt, I_cue, cue_steps, recall_steps):
     '''Recalls a sequence learned by the network by updating the network state without updating weights and biases.'''
@@ -80,11 +93,12 @@ def recall(nn, dt, I_cue, cue_steps, recall_steps):
     # Cueing 
     for _ in range(cue_steps):
         update_state(nn, I=I_cue, dt = dt)
+    # Add partial cue
         
-    # Free recall
+    # Cueing recall
     for _ in range(recall_steps):
-        update_state(nn, dt = dt, I = np.zeros(nn.n_units))
-        nn.o_history.append(nn.o.copy())
+        update_state(nn, dt = dt, I = np.zeros(nn.n_units)) 
+        nn.o_history.append(nn.o.copy()) 
 
 def one_hot_encode(pattern, hypercolumns, minicolumns):
     '''Reshapes an indexed pattern representation into a one-hot encoded
@@ -159,6 +173,9 @@ if __name__ == '__main__':
     minicolumns = 3
     n_patterns = 3
     nn = BCPNN(hypercolumns, minicolumns)
+    cue_steps = 10
+    recall_steps = 30
+    IPI = 2
 
     reset_history(nn)
     reset_state_probabilities(nn)
@@ -167,12 +184,24 @@ if __name__ == '__main__':
     seq = [[0, 1, 2], [2, 0, 1], [1, 2, 0]]
     seq = np.array([one_hot_encode(p, hypercolumns, minicolumns) for p in seq])
     print(seq)
+    print(seq[0])
 
-    train_sequence(nn, dt, Ndt, seq)
+    train_sequence(nn, dt, Ndt, seq, IPI)
+    pause(nn, dt, pause_steps= 10)
+    
+
+    # Choose time axis instead of deleting history
+    recall(nn, dt, I_cue = seq[0], cue_steps = cue_steps, recall_steps = recall_steps) 
+    # NEXT: Make sure learning happens -> Scale to 10x10 with random sequences and check if they are recalled
 
     plot_o(nn)
     plot_s(nn)
     plot_weight(nn)
+
+
+# Test maximal pattern amount to be stored (bereonde på sekvenslängd) = scaling of the newtork -> random sequences
+# Try first sequence with 100 units (10x10)
+
 
 
     
