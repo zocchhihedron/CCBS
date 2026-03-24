@@ -36,7 +36,12 @@ class BCPNN:
 
         # Variable histories
         self.s_history = []
-        self.o_history = []     
+        self.o_history = []    
+        self.z_pre_history = []
+        self.z_post_history = []
+        self.p_pre_history = []
+        self.p_post_history = []
+        self.p_co_history = []
         self.w_01_history = []    
 
 
