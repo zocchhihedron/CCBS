@@ -44,4 +44,7 @@ class BCPNN:
         self.p_co_history = []
         self.w_01_history = []    
 
+        self.time = 0.0
+        self.time_axis = []
+
 
