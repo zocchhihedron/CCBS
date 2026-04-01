@@ -141,7 +141,7 @@ def clean_history(nn):
     nn.p_co_history = []
     nn.w_01_history = []
 
-def plot_hypercolumn_activations(nn, gap=1):
+def plot_hypercolumn_activations(nn):
     o_array = np.array(nn.o_history)
     time_array = np.array(nn.time_axis)
     
@@ -157,7 +157,7 @@ def plot_hypercolumn_activations(nn, gap=1):
             unit_idx = h * nn.minicolumns + m
             
             # Calculate shifted y-position with a gap between hypercolumns
-            y_pos = (h * (nn.minicolumns + gap)) + m
+            y_pos = (h * (nn.minicolumns + 1)) + m
             
             # Find when this unit was active
             active_indices = np.where(o_array[:, unit_idx] == 1)[0]
@@ -179,7 +179,7 @@ def plot_hypercolumn_activations(nn, gap=1):
     
     # Optional: Add horizontal lines to separate hypercolumns visually
     for h in range(1, nn.hypercolumns):
-        line_pos = h * (nn.minicolumns + gap) - (gap / 2)
+        line_pos = h * (nn.minicolumns + 1) - (1 / 2)
         plt.axhline(y=line_pos, color='gray', linestyle='--', alpha=0.5)
 
     plt.tight_layout()
@@ -225,7 +225,7 @@ if __name__ == '__main__':
     
     plt.figure(figsize=(12, 8))
     
-    plot_hypercolumn_activations(nn, gap=1) 
+    plot_hypercolumn_activations(nn) 
 
 # Test maximal pattern amount to be stored (bereonde på sekvenslängd) = scaling of the newtork -> random sequences
 # Try first sequence with 100 units (10x10)
