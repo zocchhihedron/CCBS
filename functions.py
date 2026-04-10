@@ -187,14 +187,14 @@ def plot_hypercolumn_activations(nn):
 
 if __name__ == '__main__':
 
-    dt = 0.01
-    Ndt = 50
+    dt = 0.001
+    Ndt = 500
     hypercolumns = 3
     minicolumns = 3
     n_patterns = 3
     nn = BCPNN(hypercolumns, minicolumns)
     cue_steps = 10
-    recall_steps = 30
+    recall_steps = 1000
     IPI = 2
 
     clean_history(nn)
@@ -226,6 +226,8 @@ if __name__ == '__main__':
     plt.figure(figsize=(12, 8))
     
     plot_hypercolumn_activations(nn) 
+
+
 
 # Test maximal pattern amount to be stored (bereonde på sekvenslängd) = scaling of the newtork -> random sequences
 # Try first sequence with 100 units (10x10)
