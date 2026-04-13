@@ -185,26 +185,60 @@ def plot_hypercolumn_activations(nn):
     plt.tight_layout()
     plt.show()
 
+def plot_pattern_evolution(nn, trained_seq, recall_start_time):
+    """
+    Visualizes how well the network matches each trained pattern over time.
+    """
+    o_history = np.array(nn.o_history) # (time_steps, 100)
+    time_axis = np.array(nn.time_axis)
+    n_patterns = len(trained_seq)
+    
+    # Calculate overlap (dot product) between state and each pattern
+    # Since patterns are one-hot, dot product counts matching active units
+    overlaps = np.zeros((len(time_axis), n_patterns))
+    for i, pattern in enumerate(trained_seq):
+        # We normalize by number of hypercolumns so 1.0 = perfect match
+        overlaps[:, i] = np.dot(o_history, pattern) / nn.hypercolumns
+
+    plt.figure(figsize=(14, 6))
+    
+    # Create a heatmap of pattern activations
+    plt.imshow(overlaps.T, aspect='auto', origin='lower', 
+               extent=[time_axis[0], time_axis[-1], 0, n_patterns-1],
+               cmap='viridis')
+    
+    plt.colorbar(label="Pattern Match Strength")
+    
+    # Mark the start of recall
+    plt.axvline(x=recall_start_time, color='red', linestyle='--', linewidth=2, label='Recall Starts')
+    
+    plt.yticks(range(n_patterns), [f"Patt {i}" for i in range(n_patterns)])
+    plt.xlabel("Time (s)")
+    plt.ylabel("Learned Patterns")
+    plt.title("Sequence Evolution (Training to Recall)")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
 if __name__ == '__main__':
 
     dt = 0.001
     Ndt = 500
     hypercolumns = 3
     minicolumns = 3
-    n_patterns = 3
+    n_patterns = 2
     nn = BCPNN(hypercolumns, minicolumns)
     cue_steps = 10
-    recall_steps = 1000
+    recall_steps = 100
     IPI = 2
 
     clean_history(nn)
     reset_state_probabilities(nn)
 
     #seq = create_sequence(n_patterns, hypercolumns, minicolumns)
-    seq = [[0, 1, 2], [2, 0, 1], [1, 2, 0]]
-    seq = np.array([one_hot_encode(p, hypercolumns, minicolumns) for p in seq])
+    seq = create_sequence(n_patterns, hypercolumns, minicolumns)
     print(seq)
-    print(seq[0])
+    seq = np.array([one_hot_encode(p, hypercolumns, minicolumns) for p in seq])
 
     train_sequence(nn, dt, Ndt, seq, IPI)
     print('After training: ', nn.time_axis[-1])
@@ -216,6 +250,7 @@ if __name__ == '__main__':
     recall(nn, dt, I_cue = seq[0], cue_steps = cue_steps, recall_steps = recall_steps) 
     # NEXT: Make sure learning happens -> Scale to 10x10 with random sequences and check if they are recalled
 
+    recall_start = nn.time_axis[-1]
     print('After recall: ', nn.time_axis[-1])
 
     # Convert history lists to numpy arrays
@@ -226,8 +261,7 @@ if __name__ == '__main__':
     plt.figure(figsize=(12, 8))
     
     plot_hypercolumn_activations(nn) 
-
-
+    plot_pattern_evolution(nn, seq, recall_start)
 
 # Test maximal pattern amount to be stored (bereonde på sekvenslängd) = scaling of the newtork -> random sequences
 # Try first sequence with 100 units (10x10)
