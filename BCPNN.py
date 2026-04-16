@@ -27,15 +27,25 @@ class BCPNN:
         self.s = np.zeros(self.n_units) 
         self.o = np.ones(self.n_units)
         self.a = np.zeros_like(self.o) 
-        self.z_pre = np.zeros(self.n_units) * 1.0 / self.minicolumns
-        self.z_post = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        
+        self.z_pre_nmda = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_post_nmda = np.zeros(self.n_units) * 1.0 / self.minicolumns
+
+        self.z_pre_ampa = np.zeros(self.n_units) * 1.0 / self.minicolumns
+        self.z_post_ampa = np.zeros(self.n_units) * 1.0 / self.minicolumns
 
         # Weights and probabilities
         self.w = np.zeros((self.n_units, self.n_units))
-        self.p_pre  = np.ones(self.n_units) / self.n_units
-        self.p_post = np.ones(self.n_units) / self.n_units
-        self.p_co   = np.ones((self.n_units,self.n_units)) / (self.n_units**2)
         self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
+
+        self.p_pre_nmda  = np.ones(self.n_units) / self.n_units
+        self.p_post_nmda = np.ones(self.n_units) / self.n_units
+        self.p_co_nmda   = np.ones((self.n_units,self.n_units)) / (self.n_units**2)
+
+        self.p_pre_ampa  = np.ones(self.n_units) / self.n_units
+        self.p_post_ampa = np.ones(self.n_units) / self.n_units
+        self.p_co_ampa  = np.ones((self.n_units,self.n_units)) / (self.n_units**2)
+
 
         # Variable histories
         self.s_history = []
