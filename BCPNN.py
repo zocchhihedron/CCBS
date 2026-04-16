@@ -2,7 +2,8 @@ import numpy as np
 
 class BCPNN:
     def __init__(self, hypercolumns, minicolumns, g_beta = 1.0, beta = 1.0, tau_m = 0.02, 
-                 g_I = 10.0, g_a = 97.0, tau_p = 1.0, tau_z_pre = 0.1, tau_z_post = 0.02, tau_a=2.70):
+                 g_I = 10.0, g_a = 25.0, tau_p = 1.0, tau_z_pre_nmda = 0.1, tau_z_post_nmda = 0.02,
+                 tau_z_pre_ampa = 0.1, tau_z_post_ampa = 0.02, tau_a=2.70):
         '''A model of the BCPNN network.'''
 
         # Matrix representation
@@ -16,8 +17,10 @@ class BCPNN:
         self.g_a = g_a
         self.tau_m  = tau_m
         self.tau_p = tau_p
-        self.tau_z_pre = tau_z_pre
-        self.tau_z_post = tau_z_post
+        self.tau_z_pre_nmda = tau_z_pre_nmda
+        self.tau_z_post_nmda = tau_z_post_nmda
+        self.tau_z_pre_ampa = tau_z_pre_ampa
+        self.tau_z_post_ampa = tau_z_post_ampa
         self.tau_a = tau_a
 
         # State variables
