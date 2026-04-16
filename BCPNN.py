@@ -49,13 +49,18 @@ class BCPNN:
 
         # Variable histories
         self.s_history = []
-        self.o_history = []    
-        self.z_pre_history = []
-        self.z_post_history = []
-        self.p_pre_history = []
-        self.p_post_history = []
-        self.p_co_history = []
-        self.w_01_history = []    
+        self.o_history = []
+        self.w_01_history = []       
+        self.z_pre_nmda_history = []
+        self.z_post_nmda_history = []
+        self.p_pre_nmda_history = []
+        self.p_post_nmda_history = []
+        self.p_co_ampa_history = []  
+        self.z_pre_ampa_history = []
+        self.z_post_ampa_history = []
+        self.p_pre_ampa_history = []
+        self.p_post_ampa_history = []
+        self.p_co_ampa_history = []  
 
         self.time = 0.0
         self.time_axis = []
