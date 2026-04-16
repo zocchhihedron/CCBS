@@ -35,7 +35,12 @@ class BCPNN:
         self.z_post_ampa = np.zeros(self.n_units) * 1.0 / self.minicolumns
 
         # Weights and probabilities
-        self.w = np.zeros((self.n_units, self.n_units))
+        self.i_nmda = np.zeros(self.n_units)
+        self.i_ampa = np.zeros(self.n_units)
+        
+        self.w_nmda = np.zeros((self.n_units, self.n_units))
+        self.w_ampa = np.zeros((self.n_units, self.n_units))
+
         self.beta = np.log(np.ones_like(self.o) * (1.0 / self.minicolumns))
 
         self.p_pre_nmda  = np.ones(self.n_units) / self.n_units

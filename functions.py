@@ -1,14 +1,16 @@
 import numpy as np
-import random
 import matplotlib.pyplot as plt
+import random
 from BCPNN import BCPNN
+from plot_functions import *
 
 
 def update_state(nn, dt, I, noise = 0):
     '''Updates state variables per time unit without learning.'''
 
     # Current
-    nn.s += (dt / nn.tau_m) * ( + nn.g_beta * nn.beta  # Bias
+    nn.s += (dt / nn.tau_m) * ( + nn.i_nmda + nn.i_ampda # NMDA and AMPA effects
+                                    + nn.g_beta * nn.beta  # Bias
                                     + nn.g_I * I + np.dot(nn.w.T, nn.o)  # Input current
                                     - nn.g_a * nn.a  # Adaptation
                                     + noise  # Noise
@@ -20,24 +22,33 @@ def update_state(nn, dt, I, noise = 0):
     # Adaptation
     nn.a += (dt / nn.tau_a) * (nn.o - nn.a)
 
-    # Z-traces   
-    nn.z_pre += (dt / nn.tau_z_pre) * (nn.o - nn.z_pre)
-    nn.z_post += (dt / nn.tau_z_post) * (nn.o - nn.z_post)
+    # NMDA and AMPA currents
+    nn.i_nmda += nn.w_nmda * nn.z_pre_nmda / nn.hypercolumns
+    nn.i_ampa += nn.w_ampa * nn.z_pre_ampa / nn.hypercolumns
 
-    # nmda & ampa distinction
+    # Z-traces   
+    nn.z_pre_nmda += (dt / nn.tau_z_pre_nmda) * (nn.o - nn.z_pre_nmda)
+    nn.z_post_nmda += (dt / nn.tau_z_post_nmda) * (nn.o - nn.z_post_nmda)
+
+    nn.z_pre_ampa += (dt / nn.tau_z_pre_ampa) * (nn.o - nn.z_pre_ampa)
+    nn.z_post_ampa += (dt / nn.tau_z_post_ampa) * (nn.o - nn.z_post_ampa)
 
     # Probabilities
-    nn.p_pre += (dt / nn.tau_p) * (nn.z_pre - nn.p_pre)
-    nn.p_post += (dt / nn.tau_p) * (nn.z_post - nn.p_post)
-    nn.p_co += (dt / nn.tau_p) * (np.outer(nn.z_pre, nn.z_post) - nn.p_co)
+    nn.p_pre_nmda += (dt / nn.tau_p_nmda) * (nn.z_pre_nmda - nn.p_pre_nmda)
+    nn.p_post_nmda += (dt / nn.tau_p_nmda) * (nn.z_post_nmda - nn.p_post_nmda)
+    nn.p_co_nmda += (dt / nn.tau_p_nmda) * (np.outer(nn.z_pre_nmda, nn.z_post_nmda) - nn.p_co_nmda)
+
+    nn.p_pre_ampa += (dt / nn.tau_p_ampa) * (nn.z_pre_ampa - nn.p_pre_ampa)
+    nn.p_post_ampa += (dt / nn.tau_p_ampa) * (nn.z_post_ampa - nn.p_post_ampa)
+    nn.p_co_ampa += (dt / nn.tau_p_ampa) * (np.outer(nn.z_pre_ampa, nn.z_post_ampa) - nn.p_co_ampa)
 
 def update_weights(nn, dt, noise = 0):
     '''Updates weights and biases per time unit for network training.'''
 
-    # Weights  
-
-    eps = 1e-9 # Prevent log(0) as output
-    nn.w = np.log((nn.p_co + eps) / (np.outer(nn.p_pre, nn.p_post) + eps))
+    # Weights
+    eps = 1e-9 # Prevent log(0) 
+    nn.w_nmda = np.log((nn.p_co_nmda + eps) / (np.outer(nn.p_pre_nmda, nn.p_post_nmda) + eps))
+    nn.w_ampa = np.log((nn.p_co_ampa + eps) / (np.outer(nn.p_pre_ampa, nn.p_post_ampa) + eps))
 
     # Bias
     nn.beta = np.log(nn.p_post + eps) 
@@ -69,7 +80,6 @@ def pause(nn, dt, pause_steps):
     for i in range(pause_steps):
         update_state(nn, dt, I=np.zeros(nn.n_units), noise = 0)
         update_history(nn, dt)
-
 
 def train_sequence(nn, dt, Ndt, seq, learning = True, update = True, IPI=0): 
     '''Trains the network on a sequence of patterns.'''
@@ -117,167 +127,56 @@ def create_sequence(n_patterns, hypercolumns, minicolumns):
 
 def reset_state_probabilities(nn):
     nn.w = np.zeros((nn.n_units, nn.n_units))
-    nn.p_pre  = np.ones(nn.n_units) / nn.n_units
-    nn.p_post = np.ones(nn.n_units) / nn.n_units
-    nn.p_co   = np.ones((nn.n_units,nn.n_units)) / (nn.n_units**2)
     nn.beta = np.log(np.ones_like(nn.o) * (1.0 / nn.minicolumns))
+    nn.p_pre_nmda  = np.ones(nn.n_units) / nn.n_units
+    nn.p_post_nmda = np.ones(nn.n_units) / nn.n_units
+    nn.p_co_nmda   = np.ones((nn.n_units,nn.n_units)) / (nn.n_units**2)
+    nn.p_pre_ampa  = np.ones(nn.n_units) / nn.n_units
+    nn.p_post_ampa = np.ones(nn.n_units) / nn.n_units
+    nn.p_co_ampa   = np.ones((nn.n_units,nn.n_units)) / (nn.n_units**2)
 
 def update_history(nn, dt):
     nn.s_history.append(nn.s.copy()) 
     nn.o_history.append(nn.o.copy())  
-    nn.z_pre_history.append(nn.z_pre.copy()) 
-    nn.z_post_history.append(nn.z_post.copy()) 
-    nn.p_pre_history.append(nn.p_pre.copy()) 
-    nn.p_post_history.append(nn.p_post.copy()) 
-    nn.p_co_history.append(nn.p_co.copy()) 
     nn.w_01_history.append(nn.w[0][1].copy())  
     nn.time_axis.append(nn.time) 
     nn.time += dt
+    nn.z_pre_nmda_history.append(nn.z_pre_nmda.copy()) 
+    nn.z_post_nmda_history.append(nn.z_post_nmda.copy()) 
+    nn.p_pre_nmda_history.append(nn.p_pre_nmda.copy()) 
+    nn.p_post_nmda_history.append(nn.p_post_nmda.copy()) 
+    nn.p_co_nmda_history.append(nn.p_co_nmda.copy()) 
+    nn.z_pre_ampa_history.append(nn.z_pre_ampa.copy()) 
+    nn.z_post_ampa_history.append(nn.z_post_ampa.copy()) 
+    nn.p_pre_ampa_history.append(nn.p_pre_ampa.copy()) 
+    nn.p_post_ampa_history.append(nn.p_post_ampa.copy()) 
+    nn.p_co_ampa_history.append(nn.p_co_ampa.copy()) 
 
 def clean_history(nn):
     nn.s_history = []
     nn.o_history = []  
-    nn.z_pre_history = []
-    nn.z_post_history = []
-    nn.p_pre_history = []
-    nn.p_post_history = []
-    nn.p_co_history = []
     nn.w_01_history = []
-
-def plot_hypercolumn_activations(nn):
-    o_array = np.array(nn.o_history)
-    time_array = np.array(nn.time_axis)
-    
-    plt.figure(figsize=(12, 8))
-    
-    # Track labels for the y-axis
-    y_ticks = []
-    y_labels = []
-
-    for h in range(nn.hypercolumns):
-        for m in range(nn.minicolumns):
-            # Calculate global index in the flat array
-            unit_idx = h * nn.minicolumns + m
-            
-            # Calculate shifted y-position with a gap between hypercolumns
-            y_pos = (h * (nn.minicolumns + 1)) + m
-            
-            # Find when this unit was active
-            active_indices = np.where(o_array[:, unit_idx] == 1)[0]
-            
-            if len(active_indices) > 0:
-                plt.scatter(time_array[active_indices], 
-                            np.ones_like(active_indices) * y_pos, 
-                            marker='s', s=40, color='black')
-            
-            # Record tick position and label
-            y_ticks.append(y_pos)
-            y_labels.append(f"H{h}:M{m}")
-
-    # Set custom ticks to show Hypercolumn and Minicolumn IDs
-    plt.yticks(y_ticks, y_labels, fontsize=8)
-    plt.ylabel("Hypercolumn (H) : Minicolumn (M)")
-    plt.xlabel("Time (s)")
-    plt.title("BCPNN Activation: Grouped by Hypercolumns")
-    
-    # Optional: Add horizontal lines to separate hypercolumns visually
-    for h in range(1, nn.hypercolumns):
-        line_pos = h * (nn.minicolumns + 1) - (1 / 2)
-        plt.axhline(y=line_pos, color='gray', linestyle='--', alpha=0.5)
-
-    plt.tight_layout()
-    plt.show()
-
-
-def plot_current_history(nn):
-    s_array = np.array(nn.s_history)
-    time_array = np.array(nn.time_axis)
-    
-    plt.figure(figsize=(12, 8))
-    
-    # Track labels for the y-axis
-    y_ticks = []
-    y_labels = []
-
-    for h in range(nn.hypercolumns):
-        for m in range(nn.minicolumns):
-            # Calculate global index in the flat array
-            unit_idx = h * nn.minicolumns + m
-            
-            # Calculate shifted y-position with a gap between hypercolumns
-            y_pos = (h * (nn.minicolumns + 1)) + m
-            
-            # Find when this unit was active
-            active_indices = np.where(s_array[:, unit_idx] == 1)[0]
-            
-            if len(active_indices) > 0:
-                plt.scatter(time_array[active_indices], 
-                            np.ones_like(active_indices) * y_pos, 
-                            marker='s', s=40, color='black')
-            
-            # Record tick position and label
-            y_ticks.append(y_pos)
-            y_labels.append(f"H{h}:M{m}")
-
-    # Set custom ticks to show Hypercolumn and Minicolumn IDs
-    plt.yticks(y_ticks, y_labels, fontsize=8)
-    plt.ylabel("Hypercolumn (H) : Minicolumn (M)")
-    plt.xlabel("Time (s)")
-    plt.title("BCPNN Activation: Grouped by Hypercolumns")
-    
-    # Optional: Add horizontal lines to separate hypercolumns visually
-    for h in range(1, nn.hypercolumns):
-        line_pos = h * (nn.minicolumns + 1) - (1 / 2)
-        plt.axhline(y=line_pos, color='gray', linestyle='--', alpha=0.5)
-
-    plt.tight_layout()
-    plt.show()
-
-def plot_pattern_evolution(nn, trained_seq, recall_start_time):
-    """
-    Visualizes how well the network matches each trained pattern over time.
-    """
-    o_history = np.array(nn.o_history) # (time_steps, 100)
-    time_axis = np.array(nn.time_axis)
-    n_patterns = len(trained_seq)
-    
-    # Calculate overlap (dot product) between state and each pattern
-    # Since patterns are one-hot, dot product counts matching active units
-    overlaps = np.zeros((len(time_axis), n_patterns))
-    for i, pattern in enumerate(trained_seq):
-        # We normalize by number of hypercolumns so 1.0 = perfect match
-        overlaps[:, i] = np.dot(o_history, pattern) / nn.hypercolumns
-
-    plt.figure(figsize=(14, 6))
-    
-    # Create a heatmap of pattern activations
-    plt.imshow(overlaps.T, aspect='auto', origin='lower', 
-               extent=[time_axis[0], time_axis[-1], 0, n_patterns-1],
-               cmap='viridis')
-    
-    plt.colorbar(label="Pattern Match Strength")
-    
-    # Mark the start of recall
-    plt.axvline(x=recall_start_time, color='red', linestyle='--', linewidth=2, label='Recall Starts')
-    
-    plt.yticks(range(n_patterns), [f"Patt {i}" for i in range(n_patterns)])
-    plt.xlabel("Time (s)")
-    plt.ylabel("Learned Patterns")
-    plt.title("Sequence Evolution (Training to Recall)")
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
+    nn.z_pre_nmda_history = []
+    nn.z_post_nmda_history = []
+    nn.p_pre_nmda_history = []
+    nn.p_post_nmda_history = []
+    nn.p_co_nmda_history = []
+    nn.z_pre_ampa_history = []
+    nn.z_post_ampa_history = []
+    nn.p_pre_ampa_history = []
+    nn.p_post_ampa_history = []
+    nn.p_co_ampa_history = []
 
 if __name__ == '__main__':
 
     dt = 0.001
     Ndt = 500
-    hypercolumns = 5
-    minicolumns = 3
+    hypercolumns = 3
+    minicolumns = 5
     n_patterns = 3
     nn = BCPNN(hypercolumns, minicolumns)
     cue_steps = 10
-    recall_steps = 100
+    recall_steps = 1000
     IPI = 2
 
     clean_history(nn)
@@ -292,7 +191,6 @@ if __name__ == '__main__':
     print('After training: ', nn.time_axis[-1])
     pause(nn, dt, pause_steps= 10)
     print('After pause: ', nn.time_axis[-1])
-    
 
     # Choose time axis instead of deleting history
     recall(nn, dt, I_cue = seq[0], cue_steps = cue_steps, recall_steps = recall_steps) 
@@ -304,13 +202,17 @@ if __name__ == '__main__':
     # Convert history lists to numpy arrays
     # o_history shape: (time_steps, n_units)
     o_array = np.array(nn.o_history)
+    s_array = np.array(nn.s_history)
     time_array = np.array(nn.time_axis)
-    
+    weight_array = np.array(nn.w_01_history)
+    p_co_array = np.array(nn.p_co_history)
+
+    #plt.plot(time_array, weight_array)
+    #plt.show()
+
     plt.figure(figsize=(12, 8))
-    
-    #plot_current_history(nn)
     plot_hypercolumn_activations(nn) 
-    plot_pattern_evolution(nn, seq, recall_start)
+
 
 # Test maximal pattern amount to be stored (bereonde på sekvenslängd) = scaling of the newtork -> random sequences
 # Try first sequence with 100 units (10x10)
