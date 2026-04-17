@@ -172,13 +172,13 @@ if __name__ == '__main__':
 
     dt = 0.001
     Ndt = 500
-    hypercolumns = 5
+    hypercolumns = 3
     minicolumns = 5
-    n_patterns = 5
+    n_patterns = 3
     nn = BCPNN(hypercolumns, minicolumns)
-    cue_steps = 10
-    recall_steps = 1000
-    IPI = 0
+    cue_steps = 100
+    recall_steps = 10000
+    IPI = 2
 
     clean_history(nn)
     reset_state_probabilities(nn)
