@@ -9,9 +9,9 @@ def update_state(nn, dt, I, noise = 0):
     '''Updates state variables per time unit without learning.'''
 
     # Current
-    nn.s += (dt / nn.tau_m) * ( + nn.i_nmda + nn.i_ampa # NMDA and AMPA effects
+    nn.s += (dt / nn.tau_m) * ( + nn.g_i * (nn.i_nmda + nn.i_ampa) # NMDA and AMPA effects
                                     + nn.g_beta * nn.beta  # Bias
-                                    + nn.g_I * I + np.dot(nn.w.T, nn.o)  # Input current
+                                    + nn.g_I * I # Input current
                                     - nn.g_a * nn.a  # Adaptation
                                     + noise  # Noise
                                     - nn.s)  # Current   
@@ -23,8 +23,8 @@ def update_state(nn, dt, I, noise = 0):
     nn.a += (dt / nn.tau_a) * (nn.o - nn.a)
 
     # NMDA and AMPA currents (@ indicates matrix multiplication)
-    nn.i_nmda += nn.w_nmda @ nn.z_pre_nmda / nn.hypercolumns
-    nn.i_ampa += nn.w_ampa @ nn.z_pre_ampa / nn.hypercolumns
+    nn.i_nmda = nn.w_nmda @ nn.z_pre_nmda / nn.hypercolumns
+    nn.i_ampa = nn.w_ampa @ nn.z_pre_ampa / nn.hypercolumns
 
     # Z-traces   
     nn.z_pre_nmda += (dt / nn.tau_z_pre_nmda) * (nn.o - nn.z_pre_nmda)
@@ -126,7 +126,8 @@ def create_sequence(n_patterns, hypercolumns, minicolumns):
     return seq
 
 def reset_state_probabilities(nn):
-    nn.w = np.zeros((nn.n_units, nn.n_units))
+    nn.w_nmda = np.zeros((nn.n_units, nn.n_units))
+    nn.w_ampa = np.zeros((nn.n_units, nn.n_units))
     nn.beta = np.log(np.ones_like(nn.o) * (1.0 / nn.minicolumns))
     nn.p_pre_nmda  = np.ones(nn.n_units) / nn.n_units
     nn.p_post_nmda = np.ones(nn.n_units) / nn.n_units
@@ -138,7 +139,7 @@ def reset_state_probabilities(nn):
 def update_history(nn, dt):
     nn.s_history.append(nn.s.copy()) 
     nn.o_history.append(nn.o.copy())  
-    nn.w_01_history.append(nn.w[0][1].copy())  
+    nn.w_01_history.append(nn.w_nmda[0][1].copy())  
     nn.time_axis.append(nn.time) 
     nn.time += dt
     nn.z_pre_nmda_history.append(nn.z_pre_nmda.copy()) 
@@ -171,51 +172,40 @@ if __name__ == '__main__':
 
     dt = 0.001
     Ndt = 500
-    hypercolumns = 3
+    hypercolumns = 5
     minicolumns = 5
-    n_patterns = 3
+    n_patterns = 5
     nn = BCPNN(hypercolumns, minicolumns)
     cue_steps = 10
     recall_steps = 1000
-    IPI = 2
+    IPI = 0
 
     clean_history(nn)
     reset_state_probabilities(nn)
 
-    #seq = create_sequence(n_patterns, hypercolumns, minicolumns)
     seq = create_sequence(n_patterns, hypercolumns, minicolumns)
     print(seq)
     seq = np.array([one_hot_encode(p, hypercolumns, minicolumns) for p in seq])
 
     train_sequence(nn, dt, Ndt, seq, IPI)
-    print('After training: ', nn.time_axis[-1])
     pause(nn, dt, pause_steps= 10)
-    print('After pause: ', nn.time_axis[-1])
 
-    # Choose time axis instead of deleting history
     recall(nn, dt, I_cue = seq[0], cue_steps = cue_steps, recall_steps = recall_steps) 
-    # NEXT: Make sure learning happens -> Scale to 10x10 with random sequences and check if they are recalled
 
     recall_start = nn.time_axis[-1]
     print('After recall: ', nn.time_axis[-1])
 
-    # Convert history lists to numpy arrays
-    # o_history shape: (time_steps, n_units)
     o_array = np.array(nn.o_history)
     s_array = np.array(nn.s_history)
     time_array = np.array(nn.time_axis)
     weight_array = np.array(nn.w_01_history)
     p_co_array = np.array(nn.p_co_nmda_history)
 
-    #plt.plot(time_array, weight_array)
-    #plt.show()
+    print(weight_array)
 
     plt.figure(figsize=(12, 8))
     plot_hypercolumn_activations(nn) 
 
-
-# Test maximal pattern amount to be stored (bereonde på sekvenslängd) = scaling of the newtork -> random sequences
-# Try first sequence with 100 units (10x10)
 
 
 
