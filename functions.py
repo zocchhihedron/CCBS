@@ -9,7 +9,7 @@ def update_state(nn, dt, I, noise = 0):
     '''Updates state variables per time unit without learning.'''
 
     # Current
-    nn.s += (dt / nn.tau_m) * ( + nn.i_nmda + nn.i_ampda # NMDA and AMPA effects
+    nn.s += (dt / nn.tau_m) * ( + nn.i_nmda + nn.i_ampa # NMDA and AMPA effects
                                     + nn.g_beta * nn.beta  # Bias
                                     + nn.g_I * I + np.dot(nn.w.T, nn.o)  # Input current
                                     - nn.g_a * nn.a  # Adaptation
@@ -22,9 +22,9 @@ def update_state(nn, dt, I, noise = 0):
     # Adaptation
     nn.a += (dt / nn.tau_a) * (nn.o - nn.a)
 
-    # NMDA and AMPA currents
-    nn.i_nmda += nn.w_nmda * nn.z_pre_nmda / nn.hypercolumns
-    nn.i_ampa += nn.w_ampa * nn.z_pre_ampa / nn.hypercolumns
+    # NMDA and AMPA currents (@ indicates matrix multiplication)
+    nn.i_nmda += nn.w_nmda @ nn.z_pre_nmda / nn.hypercolumns
+    nn.i_ampa += nn.w_ampa @ nn.z_pre_ampa / nn.hypercolumns
 
     # Z-traces   
     nn.z_pre_nmda += (dt / nn.tau_z_pre_nmda) * (nn.o - nn.z_pre_nmda)
@@ -51,7 +51,7 @@ def update_weights(nn, dt, noise = 0):
     nn.w_ampa = np.log((nn.p_co_ampa + eps) / (np.outer(nn.p_pre_ampa, nn.p_post_ampa) + eps))
 
     # Bias
-    nn.beta = np.log(nn.p_post + eps) 
+    nn.beta = np.log(nn.p_post_nmda + eps) 
 
 def strict_max(x, minicolumns):
     '''Reshapes the current vector into the unit activation vector.'''
@@ -205,7 +205,7 @@ if __name__ == '__main__':
     s_array = np.array(nn.s_history)
     time_array = np.array(nn.time_axis)
     weight_array = np.array(nn.w_01_history)
-    p_co_array = np.array(nn.p_co_history)
+    p_co_array = np.array(nn.p_co_nmda_history)
 
     #plt.plot(time_array, weight_array)
     #plt.show()

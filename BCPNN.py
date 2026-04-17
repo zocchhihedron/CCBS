@@ -2,7 +2,7 @@ import numpy as np
 
 class BCPNN:
     def __init__(self, hypercolumns, minicolumns, g_beta = 1.0, beta = 1.0, tau_m = 0.02, 
-                 g_I = 10.0, g_a = 25.0, tau_p = 1.0, tau_z_pre_nmda = 0.1, tau_z_post_nmda = 0.02,
+                 g_I = 10.0, g_a = 25.0, tau_p_nmda = 1.0, tau_p_ampa = 1.0, tau_z_pre_nmda = 0.1, tau_z_post_nmda = 0.02,
                  tau_z_pre_ampa = 0.1, tau_z_post_ampa = 0.02, tau_a=2.70):
         '''A model of the BCPNN network.'''
 
@@ -16,7 +16,8 @@ class BCPNN:
         self.g_I = g_I
         self.g_a = g_a
         self.tau_m  = tau_m
-        self.tau_p = tau_p
+        self.tau_p_nmda = tau_p_nmda
+        self.tau_p_ampa = tau_p_ampa
         self.tau_z_pre_nmda = tau_z_pre_nmda
         self.tau_z_post_nmda = tau_z_post_nmda
         self.tau_z_pre_ampa = tau_z_pre_ampa
@@ -37,7 +38,7 @@ class BCPNN:
         # Weights and probabilities
         self.i_nmda = np.zeros(self.n_units)
         self.i_ampa = np.zeros(self.n_units)
-        
+
         self.w_nmda = np.zeros((self.n_units, self.n_units))
         self.w_ampa = np.zeros((self.n_units, self.n_units))
 
