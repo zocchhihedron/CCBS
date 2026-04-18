@@ -1,6 +1,6 @@
 """
-A Bayesian Confidence Propagation Neural Network (BCPNN) based off the previous work done
-at the Computational Brain Science Lab at KTH Royal University of Technology.
+A Bayesian Confidence Propagation Neural Network (BCPNN) class based off the previous work 
+done at the Computational Brain Science Lab at KTH Royal University of Technology.
 
 Contains all representation, parameters, state variables as well as history-documenting
 functions and a built-in time axis for a BCPNN with an arbitrary number of hypercolumns 
@@ -9,7 +9,9 @@ channels. All parameters are scaled by a factor dt in the functions module durin
 application.
 """
 
+
 import numpy as np
+
 
 class BCPNN:
     def __init__(self, hypercolumns, minicolumns, g_beta = 1.0, beta = 1.0, tau_m = 0.02, 

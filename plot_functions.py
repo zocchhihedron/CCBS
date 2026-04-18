@@ -1,5 +1,15 @@
+"""
+Module containing plotting functions for analysis of the sequence-learning workflow of a BCPNN.
+To be utilized in the main function of the functions module. 
+
+Includes:
+{Functions prone to change}
+"""
+
+
 import numpy as np
 import matplotlib.pyplot as plt
+
 
 def plot_hypercolumn_activations(nn):
     o_array = np.array(nn.o_history)
@@ -44,7 +54,6 @@ def plot_hypercolumn_activations(nn):
 
     plt.tight_layout()
     plt.show()
-
 
 def plot_current_history(nn):
     s_array = np.array(nn.s_history)
