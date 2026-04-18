@@ -75,6 +75,8 @@ def update_state(nn, dt, I, noise = 0):
 
     Parameters:
         nn: An instance of the BCPNN network.
+        dt: Time-scaling factor for the network parameters.
+        noise: Possible noise term (zero at default).
     """
 
     # Current
@@ -118,6 +120,8 @@ def update_weights(nn, dt, noise = 0):
 
     Parameters:
         nn: An instance of the BCPNN network.
+        dt: Time-scaling factor for the network parameters.
+        noise: Possible noise term (zero at default).
     """
 
     # Weights
@@ -134,8 +138,11 @@ def strict_max(x, minicolumns):
     network into normalized unit activations.
 
     Parameters:
-        nn: An instance of the BCPNN network.
-        minicolumns: An instance of the BCPNN network.
+        x: The current for an active index.
+        minicolumns: Number of minicolumns per hypercolumn.
+
+    Returns:
+        z.reshape(x.size): 
     """
 
     x = np.reshape(x, (x.size // minicolumns, minicolumns))
