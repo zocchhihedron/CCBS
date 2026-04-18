@@ -4,7 +4,7 @@ Module containing all utility needed for full-cycle sequence learning of a BCPNN
 Includes:
 - Sequence generating functions: create_sequence() and one_hot_encode()
 - Network-learning functions: update_state() and update_weights() (as well as a helper function strict_max())
-- Training-to-recall workflow functions: train_pattern(), train_sequence(), recall() and pause()
+- Training-to-recall workflow functions (building blocks): train_pattern(), train_sequence(), recall() and pause()
 - Network reset function: reset_state_probabilities()
 - Variable history-documenting functions: clean_history() and update_history()
 - Main function for executing the entire sequence learning workflow, containing adjustable parameter 
@@ -129,7 +129,7 @@ def update_weights(nn, dt, noise = 0):
     nn.w_nmda = np.log((nn.p_co_nmda + eps) / (np.outer(nn.p_pre_nmda, nn.p_post_nmda) + eps))
     nn.w_ampa = np.log((nn.p_co_ampa + eps) / (np.outer(nn.p_pre_ampa, nn.p_post_ampa) + eps))
 
-    # Bias
+    # Bias (Currently a function of NMDA only)
     nn.beta = np.log(nn.p_post_nmda + eps) 
 
 def strict_max(x, minicolumns):
@@ -154,7 +154,7 @@ def strict_max(x, minicolumns):
     return z.reshape(x.size)
 
 
-## Training-to-recall workflow functions
+## Training-to-recall workflow functions (building blocks)
 def train_pattern(nn, dt, Ndt, I, learning = True, update = True):
     '''Trains the network on a pattern.'''
 
