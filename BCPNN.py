@@ -1,10 +1,21 @@
+"""
+A Bayesian Confidence Propagation Neural Network (BCPNN) based off the previous work done
+at the Computational Brain Science Lab at KTH Royal University of Technology.
+
+Contains all representation, parameters, state variables as well as history-documenting
+functions and a built-in time axis for a BCPNN with an arbitrary number of hypercolumns 
+and minicolumns. The network encompasses dual-receptor utility with both NMDA and AMPA 
+channels. All parameters are scaled by a factor dt in the functions module during 
+application.
+"""
+
 import numpy as np
 
 class BCPNN:
     def __init__(self, hypercolumns, minicolumns, g_beta = 1.0, beta = 1.0, tau_m = 0.02, 
                  g_I = 10.0, g_a = 97.0, g_i = 1.0, tau_p_nmda = 1.0, tau_p_ampa = 1.0, tau_z_pre_nmda = 0.15, 
                  tau_z_post_nmda = 0.05, tau_z_pre_ampa = 5.0, tau_z_post_ampa = 2.0, tau_a=20):
-        '''A model of the BCPNN network.'''
+        '''An adjustable model of a Bayesian Confidence Propagation Neural Network (BCPNN).'''
 
         # Matrix representation
         self.hypercolumns = hypercolumns
@@ -69,6 +80,7 @@ class BCPNN:
         self.p_post_ampa_history = []
         self.p_co_ampa_history = []  
 
+        # Time axis for analysis
         self.time = 0.0
         self.time_axis = []
 
