@@ -21,7 +21,19 @@ from plot_functions import *
 
 ## Sequence generating functions
 def create_sequence(n_patterns, hypercolumns, minicolumns):
-    '''Creates a randomized sequence'''
+    """
+    Creates a randomized sequence of N patterns shaped
+    H x 1 and with entries between 0 and M - 1.
+
+    Parameters:
+        n_patterns: Number of patterns in the sequence (N).
+        hypercolumns: Number of hypercolumns per pattern (H).
+        minicolumns: Number of minicolumns per hypercolumn (M).
+
+    Returns:
+        seq: An array of N (H x 1)-vectors with entries in range
+        [0, M-1].
+    """
     seq = []
     for n in range(0, n_patterns):
         pattern = []
@@ -31,19 +43,39 @@ def create_sequence(n_patterns, hypercolumns, minicolumns):
     return seq
 
 def one_hot_encode(pattern, hypercolumns, minicolumns):
-    '''Reshapes an indexed pattern representation into a one-hot encoded
-    hypercolumn representation'''
+    """
+    Re-shapes a (H x 1)-vector into a one-hot-encoded vector 
+    (indexed pattern representation to one-hot encoded 
+    hypercolumn representation).
 
-    x = np.zeros(hypercolumns * minicolumns)
+    Parameters:
+        pattern: The (H x 1)-vector.
+        hypercolumns: Number of hypercolumns per pattern (H).
+        minicolumns: Number of minicolumns per hypercolumn (M).
+
+    Returns:
+        ohe_pattern: A one-hot encoded (H * M x 1)-vector divided
+        into H sections, where all entries in one section are zero
+        except for the index equaling the minicolumn that is active.
+    """
+
+    ohe_pattern = np.zeros(hypercolumns * minicolumns)
     for hyp, minic in enumerate(pattern):
-        x[hyp * minicolumns + minic] = 1
+        ohe_pattern[hyp * minicolumns + minic] = 1
 
-    return x
+    return ohe_pattern
 
 
 ## Network-learning functions
 def update_state(nn, dt, I, noise = 0):
-    '''Updates state variables per time unit without learning.'''
+    """
+    Updates state variables in an instance of the BPNN network in accordance
+    to theory. The state variables should be updated with every run of the 
+    network, whether it is learning or not.
+
+    Parameters:
+        nn: An instance of the BCPNN network.
+    """
 
     # Current
     nn.s += (dt / nn.tau_m) * ( + nn.g_i * (nn.i_nmda + nn.i_ampa) # NMDA and AMPA effects
@@ -80,7 +112,13 @@ def update_state(nn, dt, I, noise = 0):
     nn.p_co_ampa += (dt / nn.tau_p_ampa) * (np.outer(nn.z_pre_ampa, nn.z_post_ampa) - nn.p_co_ampa)
 
 def update_weights(nn, dt, noise = 0):
-    '''Updates weights and biases per time unit for network training.'''
+    """
+    Updates weights and biases in an instance of the BPNN network in accordance
+    to theory. This is where sequence learning happens.
+
+    Parameters:
+        nn: An instance of the BCPNN network.
+    """
 
     # Weights
     eps = 1e-9 # Prevent log(0) 
@@ -91,7 +129,14 @@ def update_weights(nn, dt, noise = 0):
     nn.beta = np.log(nn.p_post_nmda + eps) 
 
 def strict_max(x, minicolumns):
-    '''Helper function to update_state for .'''
+    """
+    A helper function for transforming the current s of an instance of the BCPNN
+    network into normalized unit activations.
+
+    Parameters:
+        nn: An instance of the BCPNN network.
+        minicolumns: An instance of the BCPNN network.
+    """
 
     x = np.reshape(x, (x.size // minicolumns, minicolumns))
     z = np.zeros_like(x)
@@ -144,6 +189,12 @@ def pause(nn, dt, pause_steps):
 
 ## Network reset function
 def reset_state_probabilities(nn):
+    """
+    Resets all state probabilities in an instance of the BCPNN network.
+
+    Parameters:
+        nn: An instance of the BCPNN network.
+    """
     nn.w_nmda = np.zeros((nn.n_units, nn.n_units))
     nn.w_ampa = np.zeros((nn.n_units, nn.n_units))
     nn.beta = np.log(np.ones_like(nn.o) * (1.0 / nn.minicolumns))
@@ -157,6 +208,13 @@ def reset_state_probabilities(nn):
 
 ## Variable history-documenting functions
 def clean_history(nn):
+    """
+    Resets all variable histories in an instance of the BCPNN network.
+
+    Parameters:
+        nn: An instance of the BCPNN network.
+    """
+    
     nn.s_history = []
     nn.o_history = []  
     nn.w_01_history = []
@@ -172,6 +230,13 @@ def clean_history(nn):
     nn.p_co_ampa_history = []
 
 def update_history(nn, dt):
+    """
+    Updates all variable histories in an instance of the BCPNN network.
+
+    Parameters:
+        nn: An instance of the BCPNN network.
+    """
+
     nn.s_history.append(nn.s.copy()) 
     nn.o_history.append(nn.o.copy())  
     nn.w_01_history.append(nn.w_nmda[0][1].copy())  
