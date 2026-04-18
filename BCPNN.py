@@ -66,7 +66,6 @@ class BCPNN:
         self.p_post_ampa = np.ones(self.n_units) / self.n_units
         self.p_co_ampa  = np.ones((self.n_units,self.n_units)) / (self.n_units**2)
 
-
         # Variable histories
         self.s_history = []
         self.o_history = []
