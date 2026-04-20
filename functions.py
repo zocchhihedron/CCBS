@@ -3,7 +3,7 @@ Module containing all utility needed for full-cycle sequence learning of a BCPNN
 
 Includes:
 - Sequence generating functions: create_sequence() and one_hot_encode()
-- Network-learning functions: update_state() and update_weights() (as well as a helper function strict_max())
+- Network-learning functions: update_state() and update_weights() (as well as a helper function soft_max())
 - Training-to-recall workflow functions (building blocks): train_pattern(), train_sequence(), recall() and pause()
 - Network reset function: reset_state_probabilities()
 - Variable history-documenting functions: clean_history() and update_history()
@@ -88,7 +88,7 @@ def update_state(nn, dt, I, noise = 0):
                                     - nn.s)  # Current   
 
     # Unit activations 
-    nn.o = strict_max(nn.s, nn.minicolumns)
+    nn.o = soft_max(nn.s, nn.minicolumns)
 
     # Adaptation
     nn.a += (dt / nn.tau_a) * (nn.o - nn.a)
@@ -132,26 +132,28 @@ def update_weights(nn, dt, noise = 0):
     # Bias (Currently a function of NMDA only)
     nn.beta = np.log(nn.p_post_nmda + eps) 
 
-def strict_max(x, minicolumns):
+def soft_max(x, minicolumns):
     """
-    A helper function for transforming the current s of an instance of the BCPNN
-    network into normalized unit activations.
+    A helper function for transforming the current s into normalized 
+    unit activations using a Softmax distribution per hypercolumn.
 
     Parameters:
-        x: The current for an active index.
+        x: The input current vector (size: hypercolumns * minicolumns).
         minicolumns: Number of minicolumns per hypercolumn.
 
     Returns:
-        z.reshape(x.size): 
+        z.flatten(): Normalized activations summing to 1 per hypercolumn.
     """
+    # Reshape to (Hypercolumns, Minicolumns)
+    x_reshaped = x.reshape(x.size // minicolumns, minicolumns)
+    
+    # Subtract max for numerical stability (prevents overflow in exp)
+    shift_x = x_reshaped - np.max(x_reshaped, axis=1, keepdims=True)
+    
+    # Normalize across the minicolumns axis
+    z = shift_x / np.sum(shift_x, axis=1, keepdims=True)
 
-    x = np.reshape(x, (x.size // minicolumns, minicolumns))
-    z = np.zeros_like(x)
-    maxes = np.argmax(x, axis=1)
-    for max_index, max_aux in enumerate(maxes):
-        z[max_index, max_aux] = 1
-
-    return z.reshape(x.size)
+    return z.flatten()
 
 
 ## Training-to-recall workflow functions (building blocks)
