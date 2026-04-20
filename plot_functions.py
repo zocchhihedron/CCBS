@@ -11,45 +11,43 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def plot_hypercolumn_activations(nn):
+def plot_hypercolumn_activations(nn, threshold=0.7):
     o_array = np.array(nn.o_history)
     time_array = np.array(nn.time_axis)
     
     plt.figure(figsize=(12, 8))
     
-    # Track labels for the y-axis
     y_ticks = []
     y_labels = []
 
     for h in range(nn.hypercolumns):
         for m in range(nn.minicolumns):
-            # Calculate global index in the flat array
             unit_idx = h * nn.minicolumns + m
-            
-            # Calculate shifted y-position with a gap between hypercolumns
             y_pos = (h * (nn.minicolumns + 1)) + m
             
-            # Find when this unit was active
-            active_indices = np.where(o_array[:, unit_idx] == 1)[0]
+            # Check for values above a threshold (due to softmax)
+            activations = o_array[:, unit_idx]
+            active_indices = np.where(activations > threshold)[0]
             
             if len(active_indices) > 0:
+                # OPTIONAL: Use 's=activations[active_indices]*40' to see confidence visually
                 plt.scatter(time_array[active_indices], 
                             np.ones_like(active_indices) * y_pos, 
                             marker='s', s=40, color='black')
             
-            # Record tick position and label
             y_ticks.append(y_pos)
             y_labels.append(f"H{h}:M{m}")
 
-    # Set custom ticks to show Hypercolumn and Minicolumn IDs
     plt.yticks(y_ticks, y_labels, fontsize=8)
     plt.ylabel("Hypercolumn (H) : Minicolumn (M)")
     plt.xlabel("Time (s)")
-    plt.title("BCPNN Activation: Grouped by Hypercolumns")
+    plt.title(f"BCPNN Activation (Threshold > {threshold})")
     
-    # Optional: Add horizontal lines to separate hypercolumns visually
+    # Ensure the X-axis shows the full time range even if no units are "active"
+    plt.xlim(time_array[0], time_array[-1])
+
     for h in range(1, nn.hypercolumns):
-        line_pos = h * (nn.minicolumns + 1) - (1 / 2)
+        line_pos = h * (nn.minicolumns + 1) - 0.5
         plt.axhline(y=line_pos, color='gray', linestyle='--', alpha=0.5)
 
     plt.tight_layout()
