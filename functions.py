@@ -150,8 +150,11 @@ def soft_max(x, minicolumns):
     # Subtract max for numerical stability (prevents overflow in exp)
     shift_x = x_reshaped - np.max(x_reshaped, axis=1, keepdims=True)
     
+    # Apply exponential with temperature scaling
+    exp_x = np.exp(shift_x)
+    
     # Normalize across the minicolumns axis
-    z = shift_x / np.sum(shift_x, axis=1, keepdims=True)
+    z = exp_x / np.sum(exp_x, axis=1, keepdims=True)
 
     return z.flatten()
 
@@ -302,7 +305,7 @@ if __name__ == '__main__':
     weight_array = np.array(nn.w_01_history)
     p_co_array = np.array(nn.p_co_nmda_history)
 
-    print(weight_array)
+    print(o_array)
 
     plt.figure(figsize=(12, 8))
     plot_hypercolumn_activations(nn) 
