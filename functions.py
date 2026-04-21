@@ -307,8 +307,8 @@ if __name__ == '__main__':
     nn = BCPNN(hypercolumns, minicolumns)
     nn.noise = 0.0
     cue_steps = 100
-    recall_steps = 1000
-    IPI = 1200
+    recall_steps = 100
+    IPI = 100
 
     # Network reset
     clean_history(nn)
@@ -327,7 +327,7 @@ if __name__ == '__main__':
     #print('After second pause: ', nn.time_axis[-1])
 
     # Add a pause 100ms between patterns
-    #recall(nn, dt, I_cue = seq[0], cue_steps = cue_steps, recall_steps = recall_steps) 
+    recall(nn, dt, I_cue = seq[0], cue_steps = cue_steps, recall_steps = recall_steps) 
     #recall_start = nn.time_axis[-1]
     #print('After recall: ', nn.time_axis[-1])
 
@@ -345,6 +345,9 @@ if __name__ == '__main__':
     z_pre_nmda_array = np.array(nn.z_pre_nmda_history) 
     z_post_nmda_array = np.array(nn.z_post_nmda_history)
 
+    #plot_hypercolumn_activations(nn, threshold=0.7)
+
+    '''
     print('weight array shape: ' , np.shape(weight_array))
     print('p_co array shape: ' , np.shape(p_co_nmda_array))
     print('p_pre array shape: ' , np.shape(p_pre_nmda_array))
@@ -356,34 +359,54 @@ if __name__ == '__main__':
     print('o shape: ' , np.shape(nn.o))
     print('weights for nmda: ', nn.w_nmda)
     #print(p_co_array)
-    #np.shape(nn.s)
-    #np.shape(nn.o)
-    plt.subplot(2,1,1)    
+    #np.shape(nn.o) 
+    ''' 
 
-    plt.plot(time_array, s_array[:,0], 'r')
-    plt.plot(time_array, s_array[:,1], 'g')
+    print('s shape:' , np.shape(nn.s))
+    print('s history shape:' , np.shape(nn.s_history))
+    print('s array shape:' , np.shape(s_array))
+    print('s_array[:,0] shape: ', np.shape(s_array[:,0]))
+    print('s_array[:,1] shape: ', np.shape(s_array[:,1]))
+    #print('s_array[:,1]: ', s_array[:,1])
+    print('s array ', s_array)
+    print('time axis shape: ', np.shape(nn.time_axis))
 
-    plt.subplot(2,1,2)
 
-    #plt.plot(time_array, o_array[:,0], 'r')
-    #plt.plot(time_array, o_array[:,1], 'g')
+    plt.subplot(2,2,1)
 
-    #plt.plot(time_array, z_pre_nmda_array[:,0], 'r')
-    #plt.plot(time_array, z_pre_nmda_array[:,1], 'b')
-    #plt.plot(time_array, z_post_nmda_array[:,0], 'g')
-    #plt.plot(time_array, z_post_nmda_array[:,1], 'c')
+    plt.plot(time_array, s_array[:,0], 'r', label = 'Label 1')
+    plt.plot(time_array, s_array[:,1], 'g', label = 'Label 2')
+    plt.title('Current activations ()')
 
-    #plt.plot(time_array, p_pre_nmda_array[:,0], 'r')
-    #plt.plot(time_array, p_post_nmda_array[:,1], 'g')
+    plt.subplot(2,2,2) 
 
-    plt.plot(time_array, weight_array)
+    plt.plot(time_array, o_array[:,0], 'r')
+    plt.plot(time_array, o_array[:,1], 'g')
+    plt.title('Unit activations')
+
+    plt.subplot(2,2,3)
+
+    plt.plot(time_array, z_pre_nmda_array[:,0], 'r')
+    plt.plot(time_array, z_pre_nmda_array[:,1], 'b')
+    plt.plot(time_array, z_post_nmda_array[:,0], 'g')
+    plt.plot(time_array, z_post_nmda_array[:,1], 'c')
+    plt.title('Z-trace values')
+
+    plt.subplot(2,2,4)
+
+    plt.plot(time_array, p_pre_nmda_array[:,0], 'r')
+    plt.plot(time_array, p_post_nmda_array[:,1], 'g')
+    plt.title('P-trace values (excluding co-probabilities)')
 
     plt.show()
+
+    #plt.plot(time_array, weight_array)
+
+    #plt.show()
 
 
     #plt.figure(figsize=(12, 8))
     #plot_hypercolumn_activations(nn) 
-
 
 
 
