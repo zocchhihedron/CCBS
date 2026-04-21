@@ -155,27 +155,32 @@ def soft_max(x, minicolumns, G = 1):
 
 # Make plots and then message about Thursday (s, o, .. with pauses etc., s active/inactive) (z,p plots)
 # Analyze o 
-def strict_max(x, minicolumns, threshold = 0.7):
+def strict_max(x, minicolumns, threshold = 0.07):
     """
     A helper function for transforming the current s into normalized 
-    unit activations using a Softmax distribution per hypercolumn.
+    unit activations using a strictmax distribution per hypercolumn.
+    An additional functionality is that the strictmax transform is 
+    applied only in the cases where the sum of entries in a hypercolumn
+    reaches a chosen threshold value.
 
     Parameters:
         x: The input current vector (size: hypercolumns * minicolumns).
         minicolumns: Number of minicolumns per hypercolumn.
+        threshold: The sum that the units in a hypercolumn must reach
+        in order for the strictmax condition to be applied.
 
     Returns:
         z.reshape(x.size): Normalized activations summing to 1 per hypercolumn.
     """
     y = np.reshape(x, (x.size // minicolumns, minicolumns))
     z = np.zeros_like(y)
-    i = 0
-    for i in y:
-        if np.sum(y[i]) > threshold:
-            z[i][np.argmax(y[i])] = 1   
-            i += 1
-    z = z.reshape(x.size)
-    return z
+    for idx, row in enumerate(y):
+        if np.sum(row) > threshold:
+            wta_index = np.argmax(row)
+            z[idx, wta_index] = 1 
+            
+    return z.flatten()
+
 
 ## Training-to-recall workflow functions (building blocks)
 def train_pattern(nn, dt, Ndt, I, learning = True, update = True):
@@ -195,9 +200,7 @@ def train_sequence(nn, dt, Ndt, seq, IPI, learning = True, update = True):
 
     for pattern in seq:
         train_pattern(nn, dt = dt, Ndt = Ndt, I = pattern, learning = True, update = True)
-        print('After pattern: ', nn.time_axis[-1])
-        pause(nn, dt, pause_steps = IPI) # = IPI here¨
-        print('After pause: ', nn.time_axis[-1])
+        pause(nn, dt, pause_steps = IPI) 
 
 def recall(nn, dt, I_cue, cue_steps, recall_steps):
     """
@@ -222,7 +225,6 @@ def pause(nn, dt, pause_steps):
     for i in range(pause_steps):
         update_state(nn, dt, I=np.zeros(nn.n_units))
         update_history(nn, dt)
-        #print('Time: ', nn.time_axis[-1])
 
 
 ## Network reset function
@@ -351,7 +353,8 @@ if __name__ == '__main__':
 
     plt.plot(time_array, o_array[:,0], 'r')
     plt.plot(time_array, o_array[:,1], 'g')
-    print(o_array[:,1])
+    print('o_array[:,1]',o_array[:,1])
+
 
 
     plt.show()
