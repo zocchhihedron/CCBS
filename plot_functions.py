@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def plot_hypercolumn_activations(nn, threshold=0.7):
+def plot_hypercolumn_activations(nn, threshold):
     o_array = np.array(nn.o_history)
     time_array = np.array(nn.time_axis)
     

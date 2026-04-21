@@ -300,15 +300,16 @@ if __name__ == '__main__':
 
     # Parameter values
     dt = 0.001
-    Ndt = 300
+    Ndt = 300 # = Persistence time T_p
     hypercolumns = 3
     minicolumns = 5
-    n_patterns = 1
+    n_patterns = 2
     nn = BCPNN(hypercolumns, minicolumns)
-    nn.noise = 0.0
+    nn.noise = 5.0
     cue_steps = 100
-    recall_steps = 100
-    IPI = 100
+    recall_steps = 1000
+    IPI = 100 # Inter Pulse Interval
+    threshold = 0.07
 
     # Network reset
     clean_history(nn)
@@ -317,8 +318,9 @@ if __name__ == '__main__':
     # Sequence creation
     #seq = create_sequence(n_patterns, hypercolumns, minicolumns)
     #print(seq)
-    seq = [[0, 1, 2]]
+    seq = [[0, 1, 2], [1, 2, 0]]
     seq = np.array([one_hot_encode(p, hypercolumns, minicolumns) for p in seq])
+    print(seq)
 
     # Training & recall with time measurement
     train_sequence(nn, dt, Ndt, seq, IPI, learning = True, update = True)
@@ -345,9 +347,8 @@ if __name__ == '__main__':
     z_pre_nmda_array = np.array(nn.z_pre_nmda_history) 
     z_post_nmda_array = np.array(nn.z_post_nmda_history)
 
-    #plot_hypercolumn_activations(nn, threshold=0.7)
+    #plot_hypercolumn_activations(nn, threshold)
 
-    '''
     print('weight array shape: ' , np.shape(weight_array))
     print('p_co array shape: ' , np.shape(p_co_nmda_array))
     print('p_pre array shape: ' , np.shape(p_pre_nmda_array))
@@ -359,8 +360,7 @@ if __name__ == '__main__':
     print('o shape: ' , np.shape(nn.o))
     print('weights for nmda: ', nn.w_nmda)
     #print(p_co_array)
-    #np.shape(nn.o) 
-    ''' 
+    #np.shape(nn.o)  
 
     print('s shape:' , np.shape(nn.s))
     print('s history shape:' , np.shape(nn.s_history))
@@ -374,9 +374,11 @@ if __name__ == '__main__':
 
     plt.subplot(2,2,1)
 
-    plt.plot(time_array, s_array[:,0], 'r', label = 'Label 1')
-    plt.plot(time_array, s_array[:,1], 'g', label = 'Label 2')
-    plt.title('Current activations ()')
+    plt.plot(time_array, s_array[:,0], 'b', label = 'Label 1')
+    plt.plot(time_array, s_array[:,6], 'k', label = 'Label 1')
+    plt.plot(time_array, s_array[:,1], 'r', label = 'Label 1')
+    plt.plot(time_array, s_array[:,7], 'g', label = 'Label 1')
+    plt.title('Current activations')
 
     plt.subplot(2,2,2) 
 
@@ -390,7 +392,8 @@ if __name__ == '__main__':
     plt.plot(time_array, z_pre_nmda_array[:,1], 'b')
     plt.plot(time_array, z_post_nmda_array[:,0], 'g')
     plt.plot(time_array, z_post_nmda_array[:,1], 'c')
-    plt.title('Z-trace values')
+    plt.plot(time_array, weight_array, 'y')
+    plt.title('Z-trace values & co-activation weight')
 
     plt.subplot(2,2,4)
 
