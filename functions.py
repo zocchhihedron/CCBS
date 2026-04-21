@@ -305,7 +305,7 @@ if __name__ == '__main__':
     minicolumns = 5
     n_patterns = 1
     nn = BCPNN(hypercolumns, minicolumns)
-    nn.noise = 5.0
+    nn.noise = 0.0
     cue_steps = 100
     recall_steps = 1000
     IPI = 1200
@@ -335,12 +335,26 @@ if __name__ == '__main__':
     o_array = np.array(nn.o_history)
     s_array = np.array(nn.s_history)
     time_array = np.array(nn.time_axis)
-    weight_array = np.array(nn.w_01_history)
-    p_co_array = np.array(nn.p_co_nmda_history)
 
-    print('s shape: ' , np.shape(nn.o))
+    weight_array = np.array(nn.w_01_history)
+
+    p_co_nmda_array = np.array(nn.p_co_nmda_history)
+    p_pre_nmda_array = np.array(nn.p_pre_nmda_history) 
+    p_post_nmda_array = np.array(nn.p_post_nmda_history) 
+
+    z_pre_nmda_array = np.array(nn.z_pre_nmda_history) 
+    z_post_nmda_array = np.array(nn.z_post_nmda_history)
+
+    print('weight array shape: ' , np.shape(weight_array))
+    print('p_co array shape: ' , np.shape(p_co_nmda_array))
+    print('p_pre array shape: ' , np.shape(p_pre_nmda_array))
+    print('p_post array shape: ' , np.shape(p_post_nmda_array))
+    print('s array shape: ' , np.shape(s_array))
+    print('z_pre array shape: ', np.shape(z_pre_nmda_array))
+    print('z_ppst array shape: ', np.shape(z_post_nmda_array))
     print('time axis shape: ' , np.shape(nn.time_axis))
     print('o shape: ' , np.shape(nn.o))
+    print('weights for nmda: ', nn.w_nmda)
     #print(p_co_array)
     #np.shape(nn.s)
     #np.shape(nn.o)
@@ -351,11 +365,18 @@ if __name__ == '__main__':
 
     plt.subplot(2,1,2)
 
-    plt.plot(time_array, o_array[:,0], 'r')
-    plt.plot(time_array, o_array[:,1], 'g')
-    print('o_array[:,1]',o_array[:,1])
+    #plt.plot(time_array, o_array[:,0], 'r')
+    #plt.plot(time_array, o_array[:,1], 'g')
 
+    #plt.plot(time_array, z_pre_nmda_array[:,0], 'r')
+    #plt.plot(time_array, z_pre_nmda_array[:,1], 'b')
+    #plt.plot(time_array, z_post_nmda_array[:,0], 'g')
+    #plt.plot(time_array, z_post_nmda_array[:,1], 'c')
 
+    #plt.plot(time_array, p_pre_nmda_array[:,0], 'r')
+    #plt.plot(time_array, p_post_nmda_array[:,1], 'g')
+
+    plt.plot(time_array, weight_array)
 
     plt.show()
 
