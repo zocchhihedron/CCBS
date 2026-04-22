@@ -172,6 +172,7 @@ def strict_max(x, minicolumns, threshold = 0.07):
     Returns:
         z.reshape(x.size): Normalized activations summing to 1 per hypercolumn.
     """
+
     y = np.reshape(x, (x.size // minicolumns, minicolumns))
     z = np.zeros_like(y)
     for idx, row in enumerate(y):
@@ -221,6 +222,7 @@ def pause(nn, dt, pause_steps):
     """
     Introduces a pause in the training-recall paradigm.
     """
+
     for i in range(pause_steps):
         update_state(nn, dt, I=np.zeros(nn.n_units))
         update_history(nn, dt)
@@ -234,6 +236,7 @@ def reset_state_probabilities(nn):
     Parameters:
         nn: An instance of the BCPNN network.
     """
+
     nn.w_nmda = np.zeros((nn.n_units, nn.n_units))
     nn.w_ampa = np.zeros((nn.n_units, nn.n_units))
     nn.beta = np.log(np.ones_like(nn.o) * (1.0 / nn.minicolumns))
@@ -298,8 +301,8 @@ if __name__ == '__main__':
 
     # Parameter values
     hypercolumns = 3
-    minicolumns = 5
-    n_patterns = 2
+    minicolumns = 3
+    n_patterns = 1
 
     dt = 0.001
     Ndt = 300 # = Persistence time 
@@ -319,7 +322,8 @@ if __name__ == '__main__':
 
     # Sequence creation
     #seq = create_sequence(n_patterns, hypercolumns, minicolumns)
-    seq = [[0, 1, 2], [1, 2, 0]] 
+    seq = [[0, 1, 2]] 
+    short_form_seq = seq
     seq = np.array([one_hot_encode(p, hypercolumns, minicolumns) for p in seq])
 
 
@@ -339,39 +343,54 @@ if __name__ == '__main__':
     p_post_nmda_array = np.array(nn.p_post_nmda_history) 
     z_pre_nmda_array = np.array(nn.z_pre_nmda_history) 
     z_post_nmda_array = np.array(nn.z_post_nmda_history)
+    z_pre_ampa_array = np.array(nn.z_pre_ampa_history) 
+    z_post_ampa_array = np.array(nn.z_post_ampa_history)
 
-    # plot_hypercolumn_activations(nn, threshold)
+    plot_hypercolumn_activations(nn, threshold)
 
-    plt.subplot(2,2,1)
+    plt.rcParams['axes.grid'] = True
+    plt.rcParams['grid.alpha'] = 0.6
+    plt.rcParams['grid.linestyle'] = '--'
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    fig.suptitle(f'Training and recall on sequence {short_form_seq}\n'
+                f'Persistence time: {Ndt} ms | IPI: {IPI} ms', 
+                fontsize=14, fontweight='bold', y=0.98)
 
-    plt.plot(time_array, s_array[:,0], 'r', label = 'Label 1')
-    plt.plot(time_array, s_array[:,1], 'g', label = 'Label 1')
-    plt.title('Current activations')
+    # --- Subplot 1: Current Activations ---
+    axes[0, 0].plot(time_array, s_array[:,0], 'r', label='Unit 0')
+    axes[0, 0].plot(time_array, s_array[:,1], 'g', label='Unit 1')
+    axes[0, 0].set_title('Current Activations', fontsize=12)
+    axes[0, 0].set_ylabel('Magnitude')
+    axes[0, 0].set_xlabel('Time [s]')
+    axes[0, 0].legend(loc='upper right', frameon=False)
+    axes[0, 0].grid(True, linestyle='--', alpha=0.6)
 
-    plt.subplot(2,2,2) 
+    # --- Subplot 2: Unit Activations ---
+    axes[0, 1].plot(time_array, o_array[:,0], 'r', label='Unit 0')
+    axes[0, 1].plot(time_array, o_array[:,1], 'g', label='Unit 1')
+    axes[0, 1].set_title('Unit Activations', fontsize=12)
+    axes[0, 1].set_ylabel('Activation (On/Off)')
+    axes[0, 1].set_xlabel('Time [s]')
+    axes[0, 1].legend(loc='upper right')
 
-    plt.plot(time_array, o_array[:,0], 'r')
-    plt.plot(time_array, o_array[:,1], 'g')
-    plt.title('Unit activations')
+    # --- Subplot 3: Z-trace & Weights ---
+    axes[1, 0].plot(time_array, z_pre_nmda_array[:,0], 'r', label='Z-Pre')
+    axes[1, 0].plot(time_array, z_post_nmda_array[:,0], 'g', label='Z-Post')
+    axes[1, 0].plot(time_array, weight_array, 'b', linewidth=2, label='Co-act Weight')
+    axes[1, 0].set_title('Z-trace & Co-activation Weight (NMDA)', fontsize=12)
+    axes[1, 0].set_xlabel('Time [s]')
+    axes[1, 0].legend(loc='best')
 
-    plt.subplot(2,2,3)
+    # --- Subplot 4: P-trace values ---
+    axes[1, 1].plot(time_array, p_pre_nmda_array[:,0], 'r', label='P-Pre')
+    axes[1, 1].plot(time_array, p_post_nmda_array[:,1], 'g', label='P-Post')
+    axes[1, 1].set_title('P-trace Values', fontsize=12)
+    axes[1, 1].set_xlabel('Time [s]')
+    axes[1, 1].legend(loc='best')
 
-    plt.plot(time_array, z_pre_nmda_array[:,0], 'r')
-    plt.plot(time_array, z_pre_nmda_array[:,1], 'b')
-    plt.plot(time_array, z_post_nmda_array[:,0], 'g')
-    plt.plot(time_array, z_post_nmda_array[:,1], 'c')
-    plt.plot(time_array, weight_array, 'y')
-    plt.title('Z-trace values & co-activation weight')
-
-    plt.subplot(2,2,4)
-
-    plt.plot(time_array, p_pre_nmda_array[:,0], 'r')
-    plt.plot(time_array, p_post_nmda_array[:,1], 'g')
-    plt.title('P-trace values (excluding co-probabilities)')
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95]) 
 
     plt.show()
-
-
 
 
     
