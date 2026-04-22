@@ -211,7 +211,6 @@ def recall(nn, dt, I_cue, cue_steps, recall_steps):
     for _ in range(cue_steps):
         update_state(nn, I=I_cue, dt = dt)
         update_history(nn, dt)
-    # Add partial cue
         
     # Cueing recall
     for _ in range(recall_steps):
@@ -293,7 +292,6 @@ def update_history(nn, dt):
     nn.p_post_ampa_history.append(nn.p_post_ampa.copy()) 
     nn.p_co_ampa_history.append(nn.p_co_ampa.copy()) 
 
- 
 
 ## Main function for executing the entire sequence learning workflow
 if __name__ == '__main__':
@@ -314,51 +312,40 @@ if __name__ == '__main__':
     nn.noise = 5.0
 
 
-
     # Network reset
     clean_history(nn)
     reset_state_probabilities(nn)
 
+
     # Sequence creation
     #seq = create_sequence(n_patterns, hypercolumns, minicolumns)
-    #print(seq)
-    seq = [[0, 1, 2], [1, 2, 0]]
+    seq = [[0, 1, 2], [1, 2, 0]] 
     seq = np.array([one_hot_encode(p, hypercolumns, minicolumns) for p in seq])
-    print(seq)
+
 
     # Training & recall with time measurement
     train_sequence(nn, dt, Ndt, seq, IPI, learning = True, update = True)
-    #print('After training: ', nn.time_axis[-1])
-    #pause(nn, dt, pause_steps= 500)
-    #print('After second pause: ', nn.time_axis[-1])
-
-    # Add a pause 100ms between patterns
+    pause(nn, dt, pause_steps= 100)
     recall(nn, dt, I_cue = seq[0], cue_steps = cue_steps, recall_steps = recall_steps) 
-    #recall_start = nn.time_axis[-1]
-    #print('After recall: ', nn.time_axis[-1])
+
 
     # Plotting
     o_array = np.array(nn.o_history)
     s_array = np.array(nn.s_history)
     time_array = np.array(nn.time_axis)
-
     weight_array = np.array(nn.w_01_history)
-
     p_co_nmda_array = np.array(nn.p_co_nmda_history)
     p_pre_nmda_array = np.array(nn.p_pre_nmda_history) 
     p_post_nmda_array = np.array(nn.p_post_nmda_history) 
-
     z_pre_nmda_array = np.array(nn.z_pre_nmda_history) 
     z_post_nmda_array = np.array(nn.z_post_nmda_history)
 
-    plot_hypercolumn_activations(nn, threshold)
+    # plot_hypercolumn_activations(nn, threshold)
 
     plt.subplot(2,2,1)
 
-    plt.plot(time_array, s_array[:,0], 'b', label = 'Label 1')
-    plt.plot(time_array, s_array[:,6], 'k', label = 'Label 1')
-    plt.plot(time_array, s_array[:,1], 'r', label = 'Label 1')
-    plt.plot(time_array, s_array[:,7], 'g', label = 'Label 1')
+    plt.plot(time_array, s_array[:,0], 'r', label = 'Label 1')
+    plt.plot(time_array, s_array[:,1], 'g', label = 'Label 1')
     plt.title('Current activations')
 
     plt.subplot(2,2,2) 
