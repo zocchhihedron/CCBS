@@ -299,17 +299,21 @@ def update_history(nn, dt):
 if __name__ == '__main__':
 
     # Parameter values
-    dt = 0.001
-    Ndt = 300 # = Persistence time T_p
     hypercolumns = 3
     minicolumns = 5
     n_patterns = 2
-    nn = BCPNN(hypercolumns, minicolumns)
-    nn.noise = 5.0
+
+    dt = 0.001
+    Ndt = 300 # = Persistence time 
+    IPI = 100 # Inter-pulse Interval    
     cue_steps = 100
     recall_steps = 1000
-    IPI = 100 # Inter Pulse Interval
     threshold = 0.07
+
+    nn = BCPNN(hypercolumns, minicolumns)
+    nn.noise = 5.0
+
+
 
     # Network reset
     clean_history(nn)
@@ -347,30 +351,7 @@ if __name__ == '__main__':
     z_pre_nmda_array = np.array(nn.z_pre_nmda_history) 
     z_post_nmda_array = np.array(nn.z_post_nmda_history)
 
-    #plot_hypercolumn_activations(nn, threshold)
-
-    print('weight array shape: ' , np.shape(weight_array))
-    print('p_co array shape: ' , np.shape(p_co_nmda_array))
-    print('p_pre array shape: ' , np.shape(p_pre_nmda_array))
-    print('p_post array shape: ' , np.shape(p_post_nmda_array))
-    print('s array shape: ' , np.shape(s_array))
-    print('z_pre array shape: ', np.shape(z_pre_nmda_array))
-    print('z_ppst array shape: ', np.shape(z_post_nmda_array))
-    print('time axis shape: ' , np.shape(nn.time_axis))
-    print('o shape: ' , np.shape(nn.o))
-    print('weights for nmda: ', nn.w_nmda)
-    #print(p_co_array)
-    #np.shape(nn.o)  
-
-    print('s shape:' , np.shape(nn.s))
-    print('s history shape:' , np.shape(nn.s_history))
-    print('s array shape:' , np.shape(s_array))
-    print('s_array[:,0] shape: ', np.shape(s_array[:,0]))
-    print('s_array[:,1] shape: ', np.shape(s_array[:,1]))
-    #print('s_array[:,1]: ', s_array[:,1])
-    print('s array ', s_array)
-    print('time axis shape: ', np.shape(nn.time_axis))
-
+    plot_hypercolumn_activations(nn, threshold)
 
     plt.subplot(2,2,1)
 
@@ -402,14 +383,6 @@ if __name__ == '__main__':
     plt.title('P-trace values (excluding co-probabilities)')
 
     plt.show()
-
-    #plt.plot(time_array, weight_array)
-
-    #plt.show()
-
-
-    #plt.figure(figsize=(12, 8))
-    #plot_hypercolumn_activations(nn) 
 
 
 
